@@ -36,7 +36,6 @@ update_state("tbs_main", "Home") # To avoid panel events triggering
 
 .g = reactiveValues() # Reactives for project-specific constants
 .r = reactiveValues() # Dynamic reactives used in server function
-.re = reactiveValues() # Dynamic reactives that can be exported
 .cached = reactiveValues() # Cached data for expensive computations
 .temp = list(gene_types_selected = ss("data-cbg_gene_types"))
 
@@ -47,6 +46,9 @@ update_state("tbs_main", "Home") # To avoid panel events triggering
 .project_load_complete = reactiveVal() # For UI refresh
 .next_project = NULL # Project to be loaded
 
+.re = reactiveValues() # To store reactive data for export
+.gg = reactiveValues() # To store ggplot for export
+.pl = reactiveValues() # To store plotly for export
 
 # Constants----
 # Genes by gene types

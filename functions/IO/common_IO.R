@@ -13,13 +13,6 @@ check_path = function(path){
   }
 }
 
-export_reactiveVal = function(name){
-  dir.create(dir_export(), recursive = T, showWarnings = F)
-  path = here(dir_export(), paste0(name, ".rds"))
-  saveRDS(.re[[name]], path)
-  cat(sprintf("Exported reactive value '%s'\n", name))
-}
-
 # Read matrix flexibly with rownames
 read_matrix = function(filepath){
   m = fread(filepath)

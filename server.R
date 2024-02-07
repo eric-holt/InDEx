@@ -17,9 +17,16 @@ server = function(input, output, session){
   }) |> bindEvent(.project_load_flag())
   
   # Export all `re` reactive values
+  # observe({
+  #   names(.re) |> lapply(export_reactives)
+  # }) |> bindEvent(input$btn_export)
+  
+  # Export reactive objects
   observe({
-    names(.re) |> lapply(export_reactiveVal)
-  }) |> bindEvent(input$btn_export)
+    if("data" %in% input$cbg_export) export_all_data()
+    if("ggplot" %in% input$cbg_export) export_all_gg()
+    if("plotly" %in% input$cbg_export) export_all_pl()
+  }) |> bindEvent(input$btn_export) |> throttle(5000)
 
   # Inputs
   a = reactive(as.numeric(input$num_alpha))
