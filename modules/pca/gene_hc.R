@@ -3,10 +3,17 @@ hc_ui = function(ns = identity, id = "hc"){
   ns = NS(id)
   tagList(
     if (debugging) debug_ui(ns),
-    tags$h4("LRT-significant gene hierarchical clustering"),
-    fixedRow(column(4, plotlyOutput(ns("count"), 390, 400)),
-             column(4, plotlyOutput(ns("norm"), 390, 400)),
-             column(4, plotlyOutput(ns("tpm"), 390, 400)))
+    fixedRow(
+      column(6, 
+             plotlyOutput(ns("count"), 500, 500)),
+      column(5, 
+             plotlyOutput(ns("norm"), 500, 500))
+    ),
+    fixedRow(
+      column(3),
+      column(5,
+             plotlyOutput(ns("tpm"), 500, 500))
+    )
   )
 }
 

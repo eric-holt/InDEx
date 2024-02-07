@@ -1,9 +1,9 @@
-pca_ui = function(ns = identity, label = "", id = "pca"){
+pca_ui = function(ns = identity, id = "pca"){
   id = ns(id)
   ns = NS(id)
   tagList(
     if (debugging) debug_ui(ns),
-    tags$h4(label),
+    # tags$h4(label),
     uiOutput(ns("UI"))
   )
 }
