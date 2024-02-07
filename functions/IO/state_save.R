@@ -26,6 +26,7 @@ read_input_state = function(){
   path = here(dir_project(), "input_state.rds")
   if (check_path(path)) {
     .saved_input_state <<- readRDS(path)
+    cat(sprintf("Loaded the saved input state from '%s'\n", relative(path)))
   } else {
     .saved_input_state <<- list()
   }  
@@ -43,6 +44,7 @@ save_input_state = function(){
 # Observe
 observe_input = function(id, react_val){
   observe({
+    req(react_val())
     if(length(react_val()) == 1 && is.na(react_val())){
       cat(sprintf("\tInvalid value for input '%s'\n", id))
     }else{
@@ -54,7 +56,6 @@ observe_input = function(id, react_val){
 # Update
 update_state = function(id, value){
   .saved_input_state[[id]] <<- value
-  # .rs[[id]] = value
   cat(sprintf("\tUpdated state '%s' to '%s'\n", id, paste(value, collapse = " ")))
   trigger_state_save(F)
   trigger_state_save(T)
@@ -81,18 +82,24 @@ update_input = function(id, value){
 }
 
 restore_input = function(id, input){
-  if(!id %in% names(input)) return()
-  v0 = paste(input[[id]], collapse = " ")
-  v = .saved_input_state[[id]]
+  if(!id %in% names(input)) {
+    cat(sprintf("\tInput '%s' does not exist to restore\n", id))
+    return()
+  }
   cat(sprintf("\tRestoring input '%s':\n", id))
-  cat(sprintf("\t\tcurrent state: %s\n", v0))
-  cat(sprintf("\t\tsaved state:   %s\n", paste(v, collapse = " ")))
-  update_input(id, v)
+  cat(sprintf("\t\tcurrent state: %s\n", paste(input[[id]], collapse = " ")))
+  cat(sprintf("\t\tsaved state:   %s\n", paste(ss(id), collapse = " ")))
+  update_input(id, ss(id))
 }
 
 # Saved state shortcut
 ss = function(id){
-  tryCatch(.saved_input_state[[id]], error = function(e) NULL)
+  tryCatch({
+    .saved_input_state[[id]]
+  }, error = function(e){
+    cat(sprintf("Could not retrieve saved input state '%s'\n%s\n", id, e))
+    NULL
+  })
 }
 
 # Input UIs that restore the saved state

@@ -8,7 +8,7 @@ check_path = function(path){
   if(dir.exists(path) || file.exists(path)){
     return(T)
   } else {
-    cat(sprintf("Path '%s' does not exist\n", path))
+    cat(sprintf("Path '%s' does not exist\n", relative(path)))
     return(F)
   }
 }

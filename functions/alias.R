@@ -32,3 +32,8 @@ dir_export_re = function(project = .project, user = .user){
 dir_import = function(project = .project, user = .user){
   here(dir_project(project, user), "imported_data")
 }
+
+# Show the relative path
+relative = function(path, reference = dir_user()){
+  path |> str_remove(reference)
+}

@@ -47,6 +47,8 @@ server = function(input, output, session){
   selected_tab = reactive(input$tbs_main)
   observe_input("tbs_main", selected_tab)
   
+  .r = reactiveValues()
+  
   # Home
   home_server()
   
@@ -57,13 +59,13 @@ server = function(input, output, session){
     req(filtered_data(), .dt_count)
     cat("Updating filtered features...\n")
     .r$dds = filtered_data()
-    .re$genes = unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
+    .re$genes <<- unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
   })
 
   observe({
     req(.r$dds, lrt_a())
     cat("Updating dt_lrt_sig...\n")
-    .re$dt_lrt_sig = get_dt_lrt(.r$dds, lrt_a())
+    .re$dt_lrt_sig <<- get_dt_lrt(.r$dds, lrt_a())
   })
   
   observe({
@@ -87,13 +89,13 @@ server = function(input, output, session){
   observe({
     req(.r$res_lrt)
     cat("Updating dt_res_lrt...\n")
-    .re$dt_res_lrt = dt_all_results(.r$res_lrt)
+    .re$dt_res_lrt <<- dt_all_results(.r$res_lrt)
   })
   
   observe({
     req(.r$res_all)
     cat("Updating dt_res_all...\n")
-    .re$dt_res_all = dt_all_results(.r$res_all)
+    .re$dt_res_all <<- dt_all_results(.r$res_all)
   })
   
   observe({
@@ -115,7 +117,7 @@ server = function(input, output, session){
   # Significant genes
   observe({
     req(.r$dt_res)
-    .re$dt_sig = get_dt_sig(.r$dt_res, a(), lfc())
+    .re$dt_sig <<- get_dt_sig(.r$dt_res, a(), lfc())
   }) |> debounce(1000)
 
   selected = sig_server(reactive(.re$dt_sig), reactive(.re$dt_lrt_sig))

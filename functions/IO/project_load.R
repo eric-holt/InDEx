@@ -12,6 +12,8 @@ load_project = function(input){
   assign_global(.next_project, "project")
   save_current_project()
   
+  make_all_dir() # Just in case they have been deleted
+  
   read_project_metadata()
   read_all_data()
   read_all_cache()

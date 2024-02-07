@@ -37,7 +37,7 @@ ui = fixedPage(
              )
            )
     ),
-  tabsetPanel(id = "tabs_main", selected = ss("tabs_main"),
+  tabsetPanel(id = "tbs_main",
               tabPanel("Home", home_ui()),
               tabPanel("Filter", data_ui()),
               tabPanel("PCA", pca_panel_ui()),

@@ -6,10 +6,6 @@ store_plots = function(gg_object, id){
   }
 }
 
-store_data = function(object, id){
-  .re[[id]] <<- object
-}
-
 # Export ggplot objects in the global reactive values----
 export_gg = function(id){
   if(check_path(dir_export_gg())){
