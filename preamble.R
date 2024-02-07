@@ -34,6 +34,7 @@ theme_set(theme_bw())
 # update_state("tbs_main", "Home") # To avoid panel events triggering
 
 .g = reactiveValues() # Reactives for project-specific constants
+.r = reactiveValues() # Dynamic reactives that need reset on project loading
 .cached = reactiveValues() # Cached data for expensive computations
 .temp = list(gene_types_selected = ss("data-cbg_gene_types"))
 

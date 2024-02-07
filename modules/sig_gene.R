@@ -12,28 +12,48 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
     ns = session$ns
     if (debugging) debug_server(environment())
     
-    output$UI = renderUI({
-      if(is.null(dt_sig()) || is.null(dt_lrt_sig())){
-        return(caution("No data"))
-      }
-      tagList(
-        h4("Significantly differential features"),
-        wellPanel(
-          h5("Select features to emphasize in plots"),
-          uiOutput(ns("ui_sig")))
-      )
+    no_data = reactive({
+      is.null(dt_sig()) || is.null(dt_lrt_sig())
+    })
+
+    dt = reactive({
+      req(!no_data())
+      rbind(dt_sig(), dt_lrt_sig())
     })
     
-    dt = reactive(rbind(dt_sig(), dt_lrt_sig()))
+    no_sig = reactiveVal(T)
+    observe({
+      req(dt())
+      no_sig(nrow(dt()) == 0)
+    })
     
-    ui_sig = function(){
-      if(nrow(dt()) == 0) stop("No significant features")
+    output$UI = renderUI({
+      if(no_data()){
+        return(caution("No data"))
+      } else if(no_sig()){
+        return(caution("No significant feature"))
+      }
+
       tabs = unique(dt()$label) |> lapply(function(l){
         n = nrow(dt()[label == l])
         tabPanel(sprintf("%s (%d)", l, n), 
                  DTOutput(ns(l)))
       })
-      do.call(tabsetPanel, tabs)
+
+      tagList(
+        h4("Significantly differential features"),
+        wellPanel(
+          h5("Select features to emphasize in plots"),
+          do.call(tabsetPanel, tabs)
+          ),
+        
+      )
+    })
+    
+
+    ui_sig = function(){
+      
+      
     }
     
     output$ui_sig = renderUI(ui_sig())

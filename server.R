@@ -44,10 +44,8 @@ server = function(input, output, session){
   go_pred = reactive(input$chk_go_pred)
   observe_input("chk_go_pred", go_pred)
   
-  selected_tab = reactive(input$tbs_main)
-  observe_input("tbs_main", selected_tab)
-  
-  .r = reactiveValues()
+  # selected_tab = reactive(input$tbs_main)
+  # observe_input("tbs_main", selected_tab)
   
   # Home
   home_server()

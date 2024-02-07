@@ -23,7 +23,6 @@ data_server = function(id = "data") {
           column(3,
                  wellPanel(
                    observedCheckboxGroupInput(ns("cbg_samples"), "Samples", .samples, .samples),
-                   # uiOutput(ns("ui_samples")),
                    span(title = "Count or TPM cutoff for all samples in at least one condition",
                         h5("Group concensus threshold")),
                    fixedRow(
@@ -50,7 +49,7 @@ data_server = function(id = "data") {
                                                      observedNumericInput(ns("num_tpm_cv"), "TPM", 0, 0, 99)))),
                    span(title = "Gene types to exclude",
                         fixedRow(
-                          column(8, observedCheckboxGroupInput(ns("cbg_gene_types"), "Exclude gene types", .gene_types)),
+                          column(8, observedCheckboxGroupInput(ns("cbg_gene_types"), "Exclude gene types", .gene_types, NULL)),
                           column(4, uiOutput(ns("ui_gene_count")))
                           )
                         )
@@ -63,7 +62,7 @@ data_server = function(id = "data") {
       )
     }) |> bindEvent(.project_load_complete())
     
-    # Gene count dynamic UI----
+    # Gene count UI responds to filtered()----
     output$ui_gene_count = renderUI({
       req(filtered(), !project_being_loaded())
       cat("Rendering gene counts...\n")
@@ -76,16 +75,6 @@ data_server = function(id = "data") {
         sprintf("<label><span>(%s)</span></label>", n)
       }), collapse = "<br>"))
     })
-    
-    # observe({
-    #   update_gt_selected(gt())
-    # })
-    
-    # Samples dynamic UI
-    # output$ui_samples = renderUI({
-    #   req(!project_being_loaded())
-    #   observedCheckboxGroupInput(ns("cbg_samples"), "Samples", .samples, .samples)
-    # })
     
     # Inputs----
     sp = reactive({
@@ -157,19 +146,12 @@ data_server = function(id = "data") {
       dt_display(.g$dt_tpm, sp(), included())
     })
     
-    # Subset DESeq Data Set with the selected filter conditions
-    # dds = reactive({
-    #   req(sp())
-    #   .g$dds[included(), sp()]
-    # })
-    
     dds = reactiveVal()
     observe({
       req(!project_being_loaded())
       tryCatch({.g$dds[included(), sp()]}, error = function(e) NULL) %>% dds
     })
 
-    # return(dds())
     return(dds)
   })
 }
