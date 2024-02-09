@@ -1,60 +1,77 @@
-pca_ui = function(ns = identity, label = "", id = "pca"){
+pca_ui = function(ns = identity, id = "pca"){
   id = ns(id)
   ns = NS(id)
   tagList(
     if (debugging) debug_ui(ns),
-    tags$h4(label),
-    fixedRow(column(5, plotlyOutput(ns("scat_all"), 488, 300)),
-             column(4, plotlyOutput(ns("pc_all"), 390, 300)),
-             column(3, plotlyOutput(ns("heatmap_all"), 400, 300)))
+    # tags$h4(label),
+    uiOutput(ns("UI"))
   )
 }
-
-# pca_ui = function(ns = identity, label = "", id = ns("pca")){
-#   ns = NS(id)
-#   tagList(
-#     if (debugging) debug_ui(ns),
-#     tags$h4(label),
-#     fixedRow(column(5, plotlyOutput(ns("scat_all"), 488, 300)),
-#              column(4, plotlyOutput(ns("pc_all"), 390, 300)),
-#              column(3, plotlyOutput(ns("heatmap_all"), 400, 300)))
-#   )
-# }
 
 pca_server = function(dds, id = "pca") {
   moduleServer(id, function(input, output, session) {
     if (debugging) debug_server(environment())
+    ns = session$ns
     
-    object = reactive({
+    output$UI = renderUI({
+      if(is.null(dds()) || !nrow(dds())){
+        caution("No data")
+      } else{
+        uiOutput(ns("plots"))
+      }
+    })
+    
+    # PCA result list
+    pca = reactive({
       req(dds())
+      cat("Computing PCs...\n")
       get_pca(dds())
     })
     
+    # Data identity for checking the cache need
     data_identity = reactive({
       req(dds())
       c(nrow(dds()), colnames(dds()))
     })
     
-    pca = reactive({
+    # Number of PCs for plot scaling
+    n = reactive({
+      length(.re$pca$explained_var)
+    })
+    
+    # All plots in one UI for data caching and lazy reaction
+    output$plots = renderUI({
       req(data_identity())
-      auto_cache(object, data_identity(), id)
+      isolate({
+        .re$pca <<- auto_cache(pca, data_identity(), ns("pca"))
+        store_plots(suppressWarnings(gg_pca(.re$pca)), paste0(id, "_scat"), plotly_pca)
+        store_plots(suppressWarnings(gg_all_pc(.re$pca)), paste0(id, "_all_pc"), plotly_all_pc)
+        store_plots(suppressWarnings(pca_hc_heatmap(.re$pca)), paste0(id, "_hc_heatmap"))
+      })
+      
+      tagList(
+        plotlyOutput(ns("scat"), 500, 300),
+        plotlyOutput(ns("all_pc"), 40 * n() + 80, 300),
+        plotlyOutput(ns("hc_heatmap"), 30 * n() + 150, 30 * (n() - 1) + 150)
+      )
     })
     
-    output$scat_all = renderPlotly({
-      plotly_pca(pca()) %>% suppressWarnings
-    })
-    output$pc_all = renderPlotly({
-      plotly_all_pc(pca()) %>% suppressWarnings
-    })
-    output$heatmap_all = renderPlotly({
-      pca_hc_heatmap(pca())
+    output$scat = renderPlotly({
+        cat("Rendering PCA plot...\n")
+        .pl[[paste0(id, "_scat")]]
+      # }
     })
     
-    return(
-      list(reactive(ggplot_pca(pca())),
-           reactive(ggplot_all_pc(pca()))) |> 
-        setNames(paste(id, c("scat", "bar")))
-    )
+    output$all_pc = renderPlotly({
+      cat("Rendering all-PC plot...\n")
+      .pl[[paste0(id, "_all_pc")]]
+      
+    })
+    
+    output$hc_heatmap = renderPlotly({
+      cat("Rendering PCA HC heatmap...\n")
+      .pl[[paste0(id, "_hc_heatmap")]]
+    })
   })
 }
 

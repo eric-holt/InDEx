@@ -17,18 +17,23 @@ dir_cache = function(project = .project, user = .user){
   here(dir_project(project, user), "cache")
 }
 
-dir_gg = function(project = .project, user = .user){
-  here(dir_project(project, user), "ggplot")
+dir_export_gg = function(project = .project, user = .user){
+  here(dir_project(project, user), "exported_ggplot")
 }
 
-dir_plotly = function(project = .project, user = .user){
-  here(dir_project(project, user), "plotly")
+dir_export_pl = function(project = .project, user = .user){
+  here(dir_project(project, user), "exported_plotly")
 }
 
-dir_export = function(project = .project, user = .user){
-  here(dir_project(project, user), "exported_reactives")
+dir_export_re = function(project = .project, user = .user){
+  here(dir_project(project, user), "exported_data")
 }
 
 dir_import = function(project = .project, user = .user){
   here(dir_project(project, user), "imported_data")
+}
+
+# Show the relative path
+relative = function(path, reference = dir_user()){
+  path |> str_remove(reference)
 }

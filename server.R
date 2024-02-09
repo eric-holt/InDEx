@@ -16,18 +16,20 @@ server = function(input, output, session){
     )
   }) |> bindEvent(.project_load_flag())
   
-  # Export all `re` reactive values
+  # Export reactive objects
   observe({
-    names(.re) |> lapply(export_reactiveVal)
-  }) |> bindEvent(input$btn_export)
-
+    if("data" %in% input$cbg_export) export_all_data()
+    if("ggplot" %in% input$cbg_export) export_all_gg()
+    if("plotly" %in% input$cbg_export) export_all_pl()
+  }) |> bindEvent(input$btn_export) |> throttle(5000)
+  
   # Inputs
   a = reactive(as.numeric(input$num_alpha))
   observe_input("num_alpha", a)
   
   lrt_a = reactive(as.numeric(input$num_lrt_alpha))
   observe_input("num_lrt_alpha", lrt_a)
-
+  
   lfc = reactive(as.numeric(input$num_lfc))
   observe_input("num_lfc", lfc)
   
@@ -37,8 +39,8 @@ server = function(input, output, session){
   go_pred = reactive(input$chk_go_pred)
   observe_input("chk_go_pred", go_pred)
   
-  selected_tab = reactive(input$tbs_main)
-  observe_input("tbs_main", selected_tab)
+  # selected_tab = reactive(input$tbs_main)
+  # observe_input("tbs_main", selected_tab)
   
   # Home
   home_server()
@@ -50,13 +52,13 @@ server = function(input, output, session){
     req(filtered_data(), .dt_count)
     cat("Updating filtered features...\n")
     .r$dds = filtered_data()
-    .re$genes = unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
+    .re$genes <<- unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
   })
-
+  
   observe({
     req(.r$dds, lrt_a())
     cat("Updating dt_lrt_sig...\n")
-    .re$dt_lrt_sig = get_dt_lrt(.r$dds, lrt_a())
+    .re$dt_lrt_sig <<- get_dt_lrt(.r$dds, lrt_a())
   })
   
   observe({
@@ -64,7 +66,7 @@ server = function(input, output, session){
     cat("Updating dds_lrt_sig...\n")
     .r$dds_lrt_sig = .r$dds[.re$dt_lrt_sig[, feature_id], ]
   })
-
+  
   observe({
     req(.r$dds_lrt_sig)
     cat("Updating res_lrt...\n")
@@ -80,13 +82,13 @@ server = function(input, output, session){
   observe({
     req(.r$res_lrt)
     cat("Updating dt_res_lrt...\n")
-    .re$dt_res_lrt = dt_all_results(.r$res_lrt)
+    .re$dt_res_lrt <<- dt_all_results(.r$res_lrt)
   })
   
   observe({
     req(.r$res_all)
     cat("Updating dt_res_all...\n")
-    .re$dt_res_all = dt_all_results(.r$res_all)
+    .re$dt_res_all <<- dt_all_results(.r$res_all)
   })
   
   observe({
@@ -104,22 +106,22 @@ server = function(input, output, session){
   
   # PCA
   pca_panel_server(reactive(.r$dds), reactive(.r$dds_lrt_sig))
-
+  
   # Significant genes
   observe({
     req(.r$dt_res)
-    .re$dt_sig = get_dt_sig(.r$dt_res, a(), lfc())
+    .re$dt_sig <<- get_dt_sig(.r$dt_res, a(), lfc())
   }) |> debounce(1000)
-
+  
   selected = sig_server(reactive(.re$dt_sig), reactive(.re$dt_lrt_sig))
-
+  
   # Plots
   dt_outlier = four_way_server(reactive(.r$dt_res), a, lfc, selected)
   observe({
     .re$dt_outlier = dt_outlier()
   })
   volcano_ma_server(reactive(.r$dt_res), a, lfc, selected)
-
+  
   # clusterProfiler
   dt_go = reactive({
     if(go_pred()) .re$dt_outlier

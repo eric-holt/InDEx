@@ -30,23 +30,24 @@ theme_set(theme_bw())
 .metadata = NULL # Project metadata
 
 .saved_input_state = NULL  # Saved input states (or a new list)
-# .rs = .saved_input_state %>% do.call(reactiveValues, .) # Reactive version of ss()
 
-update_state("tbs_main", "Home") # To avoid panel events triggering
+# update_state("tbs_main", "Home") # To avoid panel events triggering
 
 .g = reactiveValues() # Reactives for project-specific constants
-.r = reactiveValues() # Dynamic reactives used in server function
-.re = reactiveValues() # Dynamic reactives that can be exported
+.r = reactiveValues() # Dynamic reactives that need reset on project loading
 .cached = reactiveValues() # Cached data for expensive computations
 .temp = list(gene_types_selected = ss("data-cbg_gene_types"))
 
 .status_string = "" # For status display
 .status_updated = reactiveVal(F) # For real time status update
 
-.project_load_flag = reactiveVal(T) # React to project name change
+.project_load_flag = reactiveVal(F) # React to project name change
 .project_load_complete = reactiveVal() # For UI refresh
-.next_project = NULL # Project to be loaded
+.next_project = .project # Project to be loaded
 
+.re = reactiveValues() # To store reactive data for export
+.gg = reactiveValues() # To store ggplot for export
+.pl = reactiveValues() # To store plotly for export
 
 # Constants----
 # Genes by gene types

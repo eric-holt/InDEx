@@ -12,6 +12,8 @@ load_project = function(input){
   assign_global(.next_project, "project")
   save_current_project()
   
+  make_all_dir() # Just in case they have been deleted
+  
   read_project_metadata()
   read_all_data()
   read_all_cache()
@@ -26,7 +28,7 @@ load_project = function(input){
     
     brewer.pal(length(levels(.conditions)), "Set1") |> setNames(levels(.conditions)) |> assign_global("cond_colors")
     
-    combn(levels(.conditions), 2) |> apply(2, paste, collapse = "_") |> assign_global("contrasts")
+    combn(levels(.conditions), 2) |> apply(2, pair_to_contrast) |> assign_global("contrasts")
     
     brewer.pal(length(.contrasts), "Set1") |> setNames(.contrasts) |> assign_global("cont_colors")
   }

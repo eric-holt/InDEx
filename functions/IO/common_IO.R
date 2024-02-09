@@ -8,16 +8,9 @@ check_path = function(path){
   if(dir.exists(path) || file.exists(path)){
     return(T)
   } else {
-    cat(sprintf("Path '%s' does not exist\n", path))
+    cat(sprintf("Path '%s' does not exist\n", relative(path)))
     return(F)
   }
-}
-
-export_reactiveVal = function(name){
-  dir.create(dir_export(), recursive = T, showWarnings = F)
-  path = here(dir_export(), paste0(name, ".rds"))
-  saveRDS(.re[[name]], path)
-  cat(sprintf("Exported reactive value '%s'\n", name))
 }
 
 # Read matrix flexibly with rownames

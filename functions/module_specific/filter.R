@@ -22,34 +22,3 @@ exclude_gene = function(features, indices){
   gene_to_feature(genes)
 }
 
-# Temp variable updates for gene type choice dynamic UI----
-gene_types_choices = function(filtered_genes){
-  1:length(.gene_types) |> sapply(function(i) {
-    num_genes = sum(filtered_genes %in% .genes_by_type[[i]])
-    sprintf("%s (%d)", .gene_types[i], num_genes)
-  }) |> unname()
-}
-
-update_gt_choices = function(filtered_genes){
-  .temp$gene_types_choices <<- gene_types_choices(filtered_genes)
-}
-
-update_gt_selected = function(gene_types){
-  index = selected_index(gene_types)
-  .temp$gene_types_selected <<- .temp$gene_types_choices[index]
-}
-
-update_gene_types = function(filtered_features){
-  cat("Updating gene types...\n")
-  filtered_genes = feature_to_gene(filtered_features)
-  if(is.null(.temp$gene_types_choices)) update_gt_choices(filtered_genes)
-  index = selected_index(.temp$gene_types_selected)
-  update_gt_choices(filtered_genes)
-  update_gt_selected(index)
-}
-
-selected_index = function(gene_types){
-  which(.temp$gene_types_choices %in% gene_types)
-}
-#----
-

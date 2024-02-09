@@ -22,7 +22,7 @@ data_server = function(id = "data") {
         fixedRow(
           column(3,
                  wellPanel(
-                   uiOutput(ns("ui_samples")),
+                   observedCheckboxGroupInput(ns("cbg_samples"), "Samples", .samples, .samples),
                    span(title = "Count or TPM cutoff for all samples in at least one condition",
                         h5("Group concensus threshold")),
                    fixedRow(
@@ -48,7 +48,11 @@ data_server = function(id = "data") {
                                                 span(title = "Minimum CV percentile in TPM",
                                                      observedNumericInput(ns("num_tpm_cv"), "TPM", 0, 0, 99)))),
                    span(title = "Gene types to exclude",
-                        uiOutput(ns("ui_gene_types")))
+                        fixedRow(
+                          column(8, observedCheckboxGroupInput(ns("cbg_gene_types"), "Exclude gene types", .gene_types, NULL)),
+                          column(4, uiOutput(ns("ui_gene_count")))
+                          )
+                        )
                  )),
           column(9,
                  tabsetPanel(
@@ -58,23 +62,18 @@ data_server = function(id = "data") {
       )
     }) |> bindEvent(.project_load_complete())
     
-    # Gene type choice dynamic UI----
-    output$ui_gene_types = renderUI({
+    # Gene count UI responds to filtered()----
+    output$ui_gene_count = renderUI({
       req(filtered(), !project_being_loaded())
-      update_gene_types(filtered())
-      checkboxGroupInput(ns("cbg_gene_types"), "Exclude gene types",
-                         choices = .temp$gene_types_choices,
-                         selected = .temp$gene_types_selected)
-    })
-    
-    observe({
-      update_gt_selected(gt())
-    })
-    
-    # Samples dynamic UI
-    output$ui_samples = renderUI({
-      req(!project_being_loaded())
-      observedCheckboxGroupInput(ns("cbg_samples"), "Samples", .samples, .samples)
+      cat("Rendering gene counts...\n")
+      filtered_genes = feature_to_gene(filtered())
+      num_genes = sapply(1:length(.gene_types), function(i) {
+        sum(filtered_genes %in% .genes_by_type[[i]])
+      })
+      
+      HTML(paste(sapply(c("N", num_genes), function(n) {
+        sprintf("<label><span>(%s)</span></label>", n)
+      }), collapse = "<br>"))
     })
     
     # Inputs----
@@ -147,19 +146,12 @@ data_server = function(id = "data") {
       dt_display(.g$dt_tpm, sp(), included())
     })
     
-    # Subset DESeq Data Set with the selected filter conditions
-    # dds = reactive({
-    #   req(sp())
-    #   .g$dds[included(), sp()]
-    # })
-    
     dds = reactiveVal()
     observe({
       req(!project_being_loaded())
       tryCatch({.g$dds[included(), sp()]}, error = function(e) NULL) %>% dds
     })
 
-    # return(dds())
     return(dds)
   })
 }
