@@ -12,7 +12,7 @@ server = function(input, output, session){
   output$project_name = renderUI({
     tagList(
       h5(HTML("<center>Current project:</center>")),
-      h3(HTML(sprintf("<center>%s</center>", .project)))
+      h4(HTML(sprintf("<center>%s</center>", .project)))
     )
   }) |> bindEvent(.project_load_flag())
   

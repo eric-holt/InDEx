@@ -42,7 +42,7 @@ theme_set(theme_bw())
 .status_updated = reactiveVal(F) # For real time status update
 
 .project_load_flag = reactiveVal(F) # React to project name change
-.project_load_complete = reactiveVal() # For UI refresh
+.project_load_complete = reactiveVal() # For UI refresh; contains the project name
 .next_project = .project # Project to be loaded
 
 .re = reactiveValues() # To store reactive data for export

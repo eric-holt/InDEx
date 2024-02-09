@@ -31,8 +31,8 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
           fixedRow(
             column(3, observedNumericInput(ns("num_n"), "Terms to display", 10, 5, 100)),
             column(3, observedRadioButtons(ns("rbn_sort"), "Sort by", c("p-value", "gene count"), "p-value", inline = T)),
-            column(3, observedNumericInput(ns("num_pvalueCutoff"), "p-value cutoff", .05, 0, 1)),
-            column(3, observedNumericInput(ns("num_qvalueCutoff"), "q-value cutoff", .2, 0, 1)))))),
+            column(3, observedNumericInput(ns("num_pvalueCutoff"), "p-value cutoff", 1, 0, 1)),
+            column(3, observedNumericInput(ns("num_qvalueCutoff"), "q-value cutoff", .5, 0, 1)))))),
         tabsetPanel(
           tabPanel("Enriched GO terms", go_panels_ui(ns, "enrich_go")),
           tabPanel("GSEA (GO)", go_panels_ui(ns, "gsea_go")),
@@ -59,9 +59,14 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
     n = reactive(input$num_n)
     observe_input(ns("num_n"), n)
     
+    data_identity = reactive({
+      req(dt_res())
+      dt_res()[, .(feature_id, log2FoldChange, label)]
+    })
+    
     output$data_identity = renderUI({
       req(dt_res(), cashed_data_identity("gsea"))
-      if(is_data_updated(dt_res()[, .(feature_id, log2FoldChange, label)], "gsea"))
+      if(is_data_updated(data_identity(), "gsea"))
         caution("Data changed")
       else
         span("Data not changed", icon("check"), style = "color: green;")

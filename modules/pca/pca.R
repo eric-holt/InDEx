@@ -3,7 +3,6 @@ pca_ui = function(ns = identity, id = "pca"){
   ns = NS(id)
   tagList(
     if (debugging) debug_ui(ns),
-    # tags$h4(label),
     uiOutput(ns("UI"))
   )
 }
@@ -42,13 +41,7 @@ pca_server = function(dds, id = "pca") {
     # All plots in one UI for data caching and lazy reaction
     output$plots = renderUI({
       req(data_identity())
-      isolate({
-        .re$pca <<- auto_cache(pca, data_identity(), ns("pca"))
-        store_plots(suppressWarnings(gg_pca(.re$pca)), paste0(id, "_scat"), plotly_pca)
-        store_plots(suppressWarnings(gg_all_pc(.re$pca)), paste0(id, "_all_pc"), plotly_all_pc)
-        store_plots(suppressWarnings(pca_hc_heatmap(.re$pca)), paste0(id, "_hc_heatmap"))
-      })
-      
+      .re$pca <<- auto_cache(pca, data_identity(), ns("pca"))
       tagList(
         plotlyOutput(ns("scat"), 500, 300),
         plotlyOutput(ns("all_pc"), 40 * n() + 80, 300),
@@ -57,19 +50,23 @@ pca_server = function(dds, id = "pca") {
     })
     
     output$scat = renderPlotly({
-        cat("Rendering PCA plot...\n")
-        .pl[[paste0(id, "_scat")]]
+      cat("Rendering PCA plot...\n")
+      store_plots(suppressWarnings(gg_pca(cashed_data(ns("pca")))), paste0(id, "_scat"), plotly_pca)
+      
+      .pl[[paste0(id, "_scat")]]
       # }
     })
     
     output$all_pc = renderPlotly({
       cat("Rendering all-PC plot...\n")
+      store_plots(suppressWarnings(gg_all_pc(cashed_data(ns("pca")))), paste0(id, "_all_pc"), plotly_all_pc)
       .pl[[paste0(id, "_all_pc")]]
       
     })
     
     output$hc_heatmap = renderPlotly({
       cat("Rendering PCA HC heatmap...\n")
+      store_plots(suppressWarnings(pca_hc_heatmap(cashed_data(ns("pca")))), paste0(id, "_hc_heatmap"))
       .pl[[paste0(id, "_hc_heatmap")]]
     })
   })

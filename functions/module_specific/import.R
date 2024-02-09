@@ -56,8 +56,9 @@ import_data = function(data, name, project){
 # Save the project metadata
 save_project_metadata = function(project = .project){
   path = here(dir_project(project), "metadata.rds")
-  if(check_path(path)){
+  if(check_path(dir_project(project))){
     saveRDS(.metadata, path)
+    cat("Saved metadata\n")
   }
 }
 

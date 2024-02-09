@@ -1,7 +1,7 @@
 import_ui = function(ns = identity, id = "import"){
   id = ns(id)
   ns = NS(id)
-
+  
   set_button_tooltips = function(){
     tags$head(
       tags$script(HTML(sprintf("
@@ -93,7 +93,7 @@ import_server = function(id = "import"){
         ok(sprintf("%s is selected", file$name))
       }
     }
-
+    
     show_del_dialog = function(name){
       showModal(modalDialog(
         h4(sprintf("Delete project %s?", name)),
@@ -106,36 +106,40 @@ import_server = function(id = "import"){
       updateSelectInput(inputId = "sel_project", choices = projects(), selected = selected_project)
     }
     
-    # Button actions
+    # Button actions----
+    # Create ----
     create_project = function(pn, fg, fc, ft){
       if (!.temp$project_name_error & !any(unlist(.temp$file_null_error))){
         removeModal()
         project = trimws(pn)
-        make_all_dir(project)
-        update_project_list(project)
         update_project(project, fg, fc, ft)
         cat("Created project", project, "\n")
       }
     }
     
+    # Edit ----
     edit_project = function(pn, fg, fc, ft){
       removeModal()
       project = trimws(pn)
       if(project != .project){
         file.rename(dir_project(.project), dir_project(project))
-        update_project_list(project)
         cat("Renamed project", .project, "to", project, "\n")
       }
-      else queue_project_load(project)
       update_project(project, fg, fc, ft)
       cat("Updated project", project, "\n")
     }
     
+    # Update project (follows create or edit)----
     update_project = function(project, fg, fc, ft){
+      make_all_dir(project)
+      update_project_list(project)
+      
       import_project_data = function(data, name){
         import_data(data, name, project)
       }
-
+      
+      .metadata$Name <<- project
+      
       # GTF
       if(!is.null(fg)){
         gtf = get_gtf(fg$datapath)
@@ -177,8 +181,11 @@ import_server = function(id = "import"){
       }
       
       save_project_metadata(project)
+      updateSelectInput(inputId = ns("project_name"), choices = projects(), selected = project)
+      # queue_project_load(project)
     }
     
+    # Delete ----
     delete_project = function(name){
       removeModal()
       unlink(dir_project(name), recursive = T)
@@ -194,12 +201,13 @@ import_server = function(id = "import"){
     ft = reactive(input$file_tpm)
     
     observe(queue_project_load(pr())) |> bindEvent(pr())
-    # observe(trigger_project_load(T)) |> bindEvent(pr())
-    
+
+    # Create
     observe({
       adding_new(T)
       show_add_edit_dialog()
     }) |> bindEvent(input$btn_add)
+
     observe(create_project(pn(), fg(), fc(), ft())) |> bindEvent(input$btn_create)
     output$proj_name_err = renderUI(proj_name_err(pn()))
     output$gtf_err = renderUI(file_err(fg(), "GTF"))
@@ -209,15 +217,17 @@ import_server = function(id = "import"){
     output$file_counts_selected = renderUI(file_selected(fc()))
     output$file_tpm_selected = renderUI(file_selected(ft()))
     
+    # Edit
     observe({
       adding_new(F)
       show_add_edit_dialog(pr())
     }) |> bindEvent(input$btn_edit)
+
     observe(edit_project(pn(), fg(), fc(), ft())) |> bindEvent(input$btn_update)
     
+    # Delete
     observe(show_del_dialog(pr())) |> bindEvent(input$btn_del)
+
     observe(delete_project(pr())) |> bindEvent(input$btn_del_confirm)
-    
-    return(pr)
   })
 }
