@@ -75,49 +75,46 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     observe_input(ns("chk_lf_se"), show_se)
     
     # 4-way plot (x vs y) dataset
-    dt = reactiveVal()
-    observe({
+    dt = reactive({
       req(dt_res(), x(), y(), a(), lfc(), x() != y())
       cat(sprintf("Creating the %s vs %s dataset...\n", x(), y()))
-      dt_4way(dt_res(), x(), y(), a(), lfc()) %>% dt
+      dt_4way(dt_res(), x(), y(), a(), lfc())
     }) |> debounce(1000)
     
     # Data points outside the prediction interval
-    dt_outlier = reactiveVal()
-    observe({
-      req(dt(), conf())
-      pred_outliers(dt(), isolate(x()), isolate(y()), conf()) %>% suppressWarnings %>% dt_outlier
-      cat(sprintf("%d outliers found\n", nrow(dt_outlier())))
-    }) |> debounce(1000)
-    
+    dt_outlier = reactive({
+      req(dt(), x(), y(), conf())
+      ol = pred_outliers(dt(), x(), y(), conf()) %>% suppressWarnings
+      cat(sprintf("%d outliers found\n", nrow(ol)))
+      ol
+    })
+
     # Plot
     output$plot = renderPlotly({
-      req(dt(), selected(), conf())
+      req(dt(), selected(), x(), y(), conf())
       cat("Rendering the 4-way plot...\n")
+      
+
       store_plots(suppressWarnings(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se())), "_4_way", plotly_4way)
       .pl[["_4_way"]]
     })
     
     # Outlier DataTable
-    xy = reactiveVal()
-    observe({
+    xy = reactive({
       req(dt_outlier())
-      levels(dt_outlier()$label)[1] %>% xy
+      levels(dt_outlier()$label)[1]
     })
-    yx = reactiveVal()
-    observe({
+    yx = reactive({
       req(dt_outlier())
-      levels(dt_outlier()$label)[2] %>% yx
+      levels(dt_outlier()$label)[2]
     })
-    dt_xy = reactiveVal()
-    observe({
+    dt_xy = reactive({
       req(dt_outlier())
-      dt_outlier()[label == xy()] %>% dt_xy
+      dt_outlier()[label == xy()]
     })
-    dt_yx = reactiveVal()
-    observe({
+    dt_yx = reactive({
       req(dt_outlier())
-      dt_outlier()[label == yx()] %>% dt_yx
+      dt_outlier()[label == yx()]
     })
     
     output$ui_outlier = renderUI({
@@ -146,13 +143,12 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     })
     
     # Selected features
-    selected = reactiveVal()
-    observe({
+    selected = reactive({
       req(dt_xy(), dt_yx())
       cat("Updating selected features...\n")
       unique(c(selected_sig(), 
                dt_xy()[input$DT_xy_rows_selected, feature_id],
-               dt_yx()[input$DT_yx_rows_selected, feature_id])) %>% selected
+               dt_yx()[input$DT_yx_rows_selected, feature_id]))
     }) |> debounce(1000)
     
     # Output may be used for GO
