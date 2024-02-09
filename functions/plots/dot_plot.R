@@ -1,10 +1,4 @@
 # Dot plot
-dotplot = function(dt){
-  plt = gg_dotplot(dt)
-  if(is.null(plt)) stop("No data to plot")
-  ggplotly(plt)
-}
-
 gg_dotplot = function(dt){
   if(is.null(dt) || !nrow(dt)) return()
   dt[, Description := factor(Description, levels = Description)]
@@ -18,4 +12,9 @@ gg_dotplot = function(dt){
     plt = plt + facet_wrap(~ sign)
   }
   plt
+}
+
+plotly_dotplot = function(gg){
+  if(is.null(gg)) stop("No data to plot")
+  ggplotly(gg)
 }

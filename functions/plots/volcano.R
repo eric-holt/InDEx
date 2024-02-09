@@ -24,6 +24,6 @@ gg_volcano = function(dt, a, lfc, features){
   plt
 }
 
-plotly_volcano = function(dt, a, lfc, features){
-  ggplotly(gg_volcano(dt, a, lfc, features), tooltip = "text")
+plotly_volcano = function(gg){
+  ggplotly(gg, tooltip = "text")
 }

@@ -24,6 +24,7 @@ pca_server = function(dds, id = "pca") {
     # PCA result list
     pca = reactive({
       req(dds())
+      cat("Computing PCs...\n")
       get_pca(dds())
     })
     
@@ -35,18 +36,16 @@ pca_server = function(dds, id = "pca") {
     
     # Number of PCs for plot scaling
     n = reactive({
-      req(pca())
-      length(pca()$explained_var)
+      length(.re$pca$explained_var)
     })
     
     # All plots in one UI for data caching and lazy reaction
     output$plots = renderUI({
-      req(pca(), data_identity())
-      auto_cache(pca, data_identity(), id)
+      req(data_identity())
       isolate({
-        .re$pca <<- pca()
-        store_plots(suppressWarnings(ggplot_pca(.re$pca)), paste0(id, "_scat"))
-        store_plots(suppressWarnings(ggplot_all_pc(.re$pca)), paste0(id, "_all_pc"))
+        .re$pca <<- auto_cache(pca, data_identity(), ns("pca"))
+        store_plots(suppressWarnings(gg_pca(.re$pca)), paste0(id, "_scat"), plotly_pca)
+        store_plots(suppressWarnings(gg_all_pc(.re$pca)), paste0(id, "_all_pc"), plotly_all_pc)
         store_plots(suppressWarnings(pca_hc_heatmap(.re$pca)), paste0(id, "_hc_heatmap"))
       })
       

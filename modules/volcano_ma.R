@@ -17,8 +17,6 @@ volcano_ma_server = function(dt_res, alpha, lfc, sg, id = "vol_ma"){
         return(caution("No data to plot"))
       }
       tagList(
-        actionButton(ns("btn_export"), "Export plots"),
-        
         h4("Volcano plot" ),
         plotlyOutput(ns("volcano")),
         
@@ -39,35 +37,22 @@ volcano_ma_server = function(dt_res, alpha, lfc, sg, id = "vol_ma"){
     # Volcano plot
     output$volcano = renderPlotly({
       cat("Rendering the volcano plot...\n")
-      plotly_volcano(dt_res(), alpha(), lfc(), sg()) %>% suppressWarnings
+      store_plots(suppressWarnings(gg_volcano(dt_res(), alpha(), lfc(), sg())), "volcano", plotly_volcano)
+      .pl[["volcano"]]
     })
     
     # MA plot
     output$ma = renderPlotly({
       cat("Rendering the MA plot...\n")
-      plotly_MA(dt_res(), alpha(), lfc(), sg()) %>% suppressWarnings
+      store_plots(suppressWarnings(gg_MA(dt_res(), alpha(), lfc(), sg())), "MA", plotly_MA)
+      .pl[["MA"]]
     })
     
     # p-value histogram
     output$p_hist = renderPlotly({
       cat("Rendering the p-value histogram...\n")
-      plotly_pval_hist(dt_res(), bins()) %>% suppressWarnings
+      store_plots(suppressWarnings(gg_p_hist(dt_res(), bins())), "p_hist", plotly_p_hist)
+      .pl[["p_hist"]]
     })
-    
-    # Save ggplot
-    observe({
-      save = function(name, plt, ...){
-        filename = paste0(name, ".png")
-        ggsave(here("projects", .project, "plots", filename), plt, ...)
-        cat("Saved", filename, "\n")
-      } 
-      plt_vol = gg_volcano(dt_res(), alpha(), lfc(), sg()) %>% suppressWarnings
-      plt_ma = gg_MA(dt_res(), alpha(), lfc(), sg()) %>% suppressWarnings
-      plt_hist = gg_pval_hist(dt_res(), bins()) %>% suppressWarnings
-      save("volcano_plot", plt_vol, height = 4)
-      save("MA_plot", plt_ma, height = 4)
-      save("p_histogram", plt_hist, height = 4)
-      save("volcano_MA_p", plt_vol/plt_ma/plt_hist)
-    }) |> bindEvent(input$btn_export)
   })
 }

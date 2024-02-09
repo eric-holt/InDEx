@@ -40,13 +40,18 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
                        column(6,
                               checkboxInput(ns("chk_lf_se"), "Show LFC standard errors"))
                      )),
-                   plotlyOutput(ns("plot"), 720, 720)),
+                   uiOutput(ns("out"))),
             column(4,
                    h4("Outliers"),
                    uiOutput(ns("ui_outlier"))))        )
       }
     })
     
+    output$out = renderUI({
+      req(x(), y())
+      if(x() == y()) caution("Cannot compare the same contrast")
+      else plotlyOutput(ns("plot"), 720, 720)
+    })
     
     output$ui_axis = renderUI({
       cat("Rendering the contrast axis UI...\n")
@@ -54,10 +59,10 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     })
     
     # Inputs
-    x = reactive(input$sel_x)
+    x = reactive(to_underscore(input$sel_x))
     observe_input(ns("sel_x"), x)
     
-    y = reactive(input$sel_y)
+    y = reactive(to_underscore(input$sel_y))
     observe_input(ns("sel_y"), y)
     
     conf = reactive(input$num_conf)
@@ -72,7 +77,7 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     # 4-way plot (x vs y) dataset
     dt = reactiveVal()
     observe({
-      req(dt_res(), x(), y(), a(), lfc())
+      req(dt_res(), x(), y(), a(), lfc(), x() != y())
       cat(sprintf("Creating the %s vs %s dataset...\n", x(), y()))
       dt_4way(dt_res(), x(), y(), a(), lfc()) %>% dt
     }) |> debounce(1000)
@@ -89,7 +94,8 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     output$plot = renderPlotly({
       req(dt(), selected(), conf())
       cat("Rendering the 4-way plot...\n")
-      plotly_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se()) %>% suppressWarnings
+      store_plots(suppressWarnings(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se())), "_4_way", plotly_4way)
+      .pl[["_4_way"]]
     })
     
     # Outlier DataTable
@@ -149,7 +155,7 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
                dt_yx()[input$DT_yx_rows_selected, feature_id])) %>% selected
     }) |> debounce(1000)
     
-    # Output, used for GO
+    # Output may be used for GO
     out = reactiveVal()
     observe({
       tryCatch(dt_outlier()[, .(feature_id, gene_id, gene_name, label)], 

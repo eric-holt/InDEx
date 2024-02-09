@@ -23,6 +23,6 @@ gg_MA = function(dt, a, lfc, features){
   plt
 }
 
-plotly_MA = function(dt, a, lfc, features){
-  ggplotly(gg_MA(dt, a, lfc, features), tooltip = "text")
+plotly_MA = function(gg){
+  ggplotly(gg, tooltip = "text")
 }

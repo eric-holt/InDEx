@@ -19,7 +19,6 @@ hyperlink = function(url, text){
   sprintf('<a href="%s" target="_blank">%s</a>', url, text)
 }
 
-
 # Generate condition pairs (length-2 vectors) from dds object
 cond_pairs_from_dds = function(dds){
   combn(levels(dds$condition), 2) %>% split(rep(1:ncol(.), each = 2))
@@ -36,3 +35,12 @@ contrast_to_conditions = function(contrast){
   str_split_1(contrast, "_")
 }
 
+# To clarity the meaning of contrasts in labels
+to_slash = function(contrast){
+  str_replace(contrast, "_", "/")
+}
+
+# To be safe in variable names
+to_underscore = function(contrast){
+  str_replace(contrast, "/", "_")
+}

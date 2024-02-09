@@ -26,7 +26,7 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
             column(4, observedNumericInput(ns("num_minGSSize"), "Min. gene set size", 10, 0)),
             column(4, observedNumericInput(ns("num_maxGSSize"), "Max. gene set size", 500, 0))))),
           column(2, actionButton(ns("btn_reset"), "Reset input")),
-          column(2, actionButton(ns("btn_export"), "Export plots"))),
+          ),
         fixedRow(column(9, wellPanel(
           fixedRow(
             column(3, observedNumericInput(ns("num_n"), "Terms to display", 10, 5, 100)),
@@ -63,11 +63,9 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
       req(dt_res(), cashed_data_identity("gsea"))
       if(is_data_updated(dt_res()[, .(feature_id, log2FoldChange, label)], "gsea"))
         caution("Data changed")
-        # span("Data changed", icon("circle-exclamation"), style = "color: red;")
       else
         span("Data not changed", icon("check"), style = "color: green;")
     })
-    
     
     observe({
       req(dt_res())
@@ -101,26 +99,6 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
       enrich_go = go_panels_server(enrich_go, p, q, n, sort, "enrich_go"),
       gsea_go = go_panels_server(gsea_go, p, q, n, sort, "gsea_go")
     )
-
-    observe({
-      plt_list_names = names(plt_lists)
-      dirs = here("projects", .project, "plots", plt_list_names) |> setNames(plt_list_names)
-      plt_list_names |> lapply(function(list_name){
-        plt_list = plt_lists[[list_name]]()
-        names(plt_list) |> lapply(function(label){
-          plots = plt_list[[label]]
-          names(plots) |> lapply(function(ont){
-            plt = plots[[ont]]()
-            if(is.ggplot(plt)){
-              dir = dirs[list_name]
-              path = here(dir, paste0(ont, "_", label, ".png"))
-              ggsave(path, plt)
-              cat("Saved", path, "\n")
-            }
-          })
-        })
-      })
-    }) |> bindEvent(input$btn_export)
 
     observe({
       updateNumericInput(inputId = "num_n", value = 10)

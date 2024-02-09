@@ -19,7 +19,7 @@ get_pca = function(dds){
 }
 
 # PCA plot (PC 1 and 2)
-ggplot_pca = function(pca, colors = .cond_colors){
+gg_pca = function(pca, colors = .cond_colors){
   if(is.null(pca)) stop("No data")
   vars = pca$explained_var * 100
   plt = pca$dt |> 
@@ -34,12 +34,12 @@ ggplot_pca = function(pca, colors = .cond_colors){
   plt
 }
 
-plotly_pca = function(pca, colors = .cond_colors){
-  ggplotly(ggplot_pca(pca, colors), tooltip = "text")
+plotly_pca = function(gg){
+  ggplotly(gg, tooltip = "text")
 }
 
 # Bar plot for all PCs from PCA
-ggplot_all_pc = function(pca, colors = .cond_colors){
+gg_all_pc = function(pca, colors = .cond_colors){
   if(is.null(pca)) stop("No data")
   dt = pca$dt
   vars = pca$explained_var * 100
@@ -62,8 +62,8 @@ ggplot_all_pc = function(pca, colors = .cond_colors){
   plt
 }
 
-plotly_all_pc = function(pca, colors = .cond_colors){
-  ggplotly(ggplot_all_pc(pca, colors), tooltip = "text")
+plotly_all_pc = function(gg){
+  ggplotly(gg, tooltip = "text")
 }
 
 

@@ -34,6 +34,17 @@ gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
                   pred_u = pred[, "upr"],
                   pred_l = pred[, "lwr"])]
   
+  # Regions of interest (usual matrix id order)
+  # r = c("similar", "different", "opposite")
+  # rect_colors = c("#aaff00", "#aa80ff", "#5500ff")
+  # names(rect_colors) = r
+  # dt_region = data.table(xmin = rep(c(-Inf, -lfc, lfc), each = 3),
+  #                        xmax = rep(c(-lfc, lfc, Inf), each = 3),
+  #                        ymin = rep(c(lfc, -lfc, -Inf), 3),
+  #                        ymax = rep(c(Inf, lfc, -lfc), 3),
+  #                        region = c(r[3], r[2], r[1], r[2], r[1], r[2], r[1], r[2], r[3]))
+  
+  
   # Correlation
   ct = cor.test(dt$x, dt$y)
   # Plot
@@ -43,7 +54,12 @@ gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
                               gene_name, 
                               ax, signif(px, 3), 
                               ay, signif(py, 3),
-                              az, signif(pz, 3)))) + 
+                              az, signif(pz, 3))))
+  # Draw regions
+  # plt = plt + geom_rect(data = dt_region, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = region), alpha = 1/3, inherit.aes = F) +
+  # scale_fill_manual(values = rect_colors) +
+  
+  plt = plt +
     geom_vline(xintercept = lfc, color = "gray25", linewidth = .1) +
     geom_vline(xintercept = -lfc, color = "gray25", linewidth = .1) +
     geom_hline(yintercept = lfc, color = "gray25", linewidth = .1) +
@@ -72,15 +88,16 @@ gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
     geom_point(data = dt[selected == T], size = 4, alpha = .9) +
     coord_fixed() +
     scale_color_manual(values = colors) +
-    labs(x = paste(ax, "log2 fold change"), 
-         y = paste(ay, "log2 fold change"), 
+    labs(x = paste(to_slash(ax), "log2 fold change"), 
+         y = paste(to_slash(ay), "log2 fold change"), 
          alpha = "", color = "", size = "") +
-    guides(size = "none")
+    guides(size = "none", nrow = 2) +
+    theme(legend.position = "top",
+          legend.box = "horizontal")
   plt
 }
 
-plotly_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
-  plt = gg_4way(dt, ax, ay, a, lfc, features, level, show_int, show_se)
-  ggplotly(plt, tooltip = "text") |> 
+plotly_4way = function(gg){
+  ggplotly(gg, tooltip = "text") |> 
     layout(legend = list(orientation = "h", x = .5, y = 1, xanchor = "center", yanchor = "bottom"))
 }

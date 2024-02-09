@@ -8,7 +8,7 @@ read_cache = function(name){
     data = NULL
     cat("\tCache", name, "has not been saved\n")
   }
-  .cached[[name]] = data
+  .cached[[name]] <<- data
   data
 }
 
@@ -18,7 +18,7 @@ read_all_cache = function(){
 }
 
 write_cache = function(data, name){
-  .cached[[name]] = data
+  .cached[[name]] <<- data
   dir.create(dir_cache(), recursive = T, showWarnings = F)
   path = here(dir_cache(), paste0(name, ".rds"))
   saveRDS(data, path)
@@ -26,7 +26,6 @@ write_cache = function(data, name){
 }
 
 # Convenience functions---- 
-# Pass object as a reactive to evaluate only when being saved.
 cashed_data = function(name){
   .cached[[name]]
 }
@@ -52,15 +51,25 @@ is_new = function(data_identity, name){
 }
 
 update_cache = function(reactive_object, data_identity, name){
+  cat(sprintf("Updating cache for '%s'...\n", name))
   record_data_identity(data_identity, name)
   write_cache(reactive_object(), name)
 }
 
 auto_update_cache = function(reactive_object, data_identity, name){
-  if(is_new(data_identity, name)) update_cache(reactive_object, data_identity, name)
+  if(is_new(data_identity, name)){
+    update_cache(reactive_object, data_identity, name)
+  }
 }
 
+# Use cache if data identity has changed
 auto_cache = function(reactive_object, data_identity, name){
   auto_update_cache(reactive_object, data_identity, name)
+  cashed_data(name)
+}
+
+# Use cache if a condition is met
+get_cache_if = function(reactive_object, condition, name){
+  if(!is_cached(name) || !condition) write_cache(reactive_object(), name)
   cashed_data(name)
 }

@@ -1,14 +1,14 @@
 # Store ggplot and plotly objects in global reactive values
-store_plots = function(gg_or_plotly, id){
-  if("ggplot" %in% class(gg_or_plotly)){
-    .gg[[id]] <<- gg_or_plotly
-    .pl[[id]] <<- ggplotly(.gg[[id]])
-    cat(sprintf("Stored gg and plotly plots for '%s' in export reactives\n", id))
-  } else if ("plotly" %in% class(gg_or_plotly)){
-    .pl[[id]] <<- gg_or_plotly
-    cat(sprintf("Stored plotly plot for '%s' in export reactives\n", id))
+store_plots = function(gg_or_pl, id, pl_func = ggplotly){
+  if("ggplot" %in% class(gg_or_pl)){
+    .gg[[id]] <<- gg_or_pl
+    .pl[[id]] <<- pl_func(.gg[[id]])
+    cat(sprintf("Stored ggplot and plotly for '%s' in export reactives\n", id))
+  } else if ("plotly" %in% class(gg_or_pl)){
+    .pl[[id]] <<- gg_or_pl
+    cat(sprintf("Stored plotly for '%s' in export reactives\n", id))
   } else {
-    cat(sprintf("store_plots: 'ggplot' or 'plotly' not among the object classes: %s", paste(class(gg_or_plotly), collapse = ", ")))
+    cat(sprintf("store_plots: 'ggplot' or 'plotly' not among the object classes: %s", paste(class(gg_or_pl), collapse = ", ")))
   }
 }
 

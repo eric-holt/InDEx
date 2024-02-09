@@ -43,8 +43,8 @@ pred_outliers = function(dt, ax, ay, level){
 
 contrasts_to_4way_labels = function(...){
   list(...) |> sapply(function(contrast){
-    pair = contrast_to_conditions(contrast)
-    sprintf("%s/%s significant", pair[1], pair[2])
+    # pair = contrast_to_conditions(contrast)
+    sprintf("%s significant", to_slash(contrast))
   }) |> c("not significant")
 }
 

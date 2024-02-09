@@ -68,7 +68,7 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
     }
     
     observe({
-      req(dt(), nrow(dt()) > 0)
+      req(dt(), nrow(dt()))
       unique(dt()$label) |> lapply(function(l){
         output[[l]] = renderDT(render_sig(dt(), l))
       })
@@ -76,6 +76,7 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
 
     selected = reactiveVal()
     observe({
+      req(dt_sig())
       unique(dt_sig()$label) |> lapply(function(l){
         dt = dt_sig()[label == l]
         idx = input[[paste0(l, "_rows_selected")]]
