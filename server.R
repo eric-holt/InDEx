@@ -26,7 +26,7 @@ server = function(input, output, session){
   # Inputs
   a = reactive(as.numeric(input$num_alpha))
   observe_input("num_alpha", a)
-  
+ 
   lrt_a = reactive(as.numeric(input$num_lrt_alpha))
   observe_input("num_lrt_alpha", lrt_a)
   
@@ -38,6 +38,22 @@ server = function(input, output, session){
   
   go_pred = reactive(input$chk_go_pred)
   observe_input("chk_go_pred", go_pred)
+  
+  # Set LRT α to the same value as Wald
+  observe({
+    req(input$chk_same_as_wald)
+    updateNumericInput(session, "num_lrt_alpha", value = input$num_alpha)
+  })
+
+  # Disable LRT α input when set to be the same as Wald
+  observe({
+    req(!is.null(input$chk_same_as_wald))
+    if (input$chk_same_as_wald) {
+      disable("num_lrt_alpha")
+    } else {
+      enable("num_lrt_alpha")
+    }
+  })
   
   # selected_tab = reactive(input$tbs_main)
   # observe_input("tbs_main", selected_tab)

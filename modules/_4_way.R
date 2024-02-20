@@ -93,8 +93,6 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     output$plot = renderPlotly({
       req(dt(), selected(), x(), y(), conf())
       cat("Rendering the 4-way plot...\n")
-      
-
       store_plots(suppressWarnings(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se())), "_4_way", plotly_4way)
       .pl[["_4_way"]]
     })
