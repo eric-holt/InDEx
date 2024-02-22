@@ -102,14 +102,9 @@ data_server = function(id = "data") {
     
     gt = reactive(input$cbg_gene_types) |> debounce(2000)
     observe_input(ns("cbg_gene_types"), gt)
-    
-    i_gt = reactiveVal()
-    observe({
-      req(gt(), .temp$gene_types_choices, .temp$gene_types_selected)
-      which(.temp$gene_types_choices %in% .temp$gene_types_selected) %>% i_gt
-    })
-    
+
     # Feature filters
+    # by thresholds
     filtered = reactiveVal()
     observe({
       req(.g$dt_count, !project_being_loaded())
@@ -125,10 +120,11 @@ data_server = function(id = "data") {
       f %>% filtered
     })
     
+    # by gene type
     included = reactiveVal()
     observe({
       req(filtered(), !project_being_loaded())
-      exclude_gene(filtered(), i_gt()) %>% included
+      exclude_gene(filtered(), gt()) %>% included
     })
     
     # Count/TPM matrix display

@@ -71,7 +71,7 @@ genes_by_type = function(gtf){
     gtf[gene_biotype %like% "RNA" & !gene_biotype %like% "ncRNA"]$gene_id
   )
   genes[[8]] = setdiff(gtf$gene_id, unique(unlist(genes)))
-  genes
+  genes |> setNames(.gene_types)
 }
 
 

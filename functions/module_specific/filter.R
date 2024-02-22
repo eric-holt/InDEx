@@ -14,10 +14,10 @@ filter_by_cv = function(dt, percentile){
 }
 
 # Exclude genes by type, returning corresponding features
-exclude_gene = function(features, indices){
+exclude_gene = function(features, gene_types){
   genes = feature_to_gene(features)
-  for(index in indices){
-    genes = genes |> setdiff(.genes_by_type[[index]])
+  for(gt in gene_types){
+    genes = genes |> setdiff(.genes_by_type[[gt]])
   }
   gene_to_feature(genes)
 }
