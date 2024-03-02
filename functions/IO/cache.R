@@ -3,7 +3,7 @@
 
 # Cache object to store the file path, current data, identity data, and last cache time
 new_cache_obj = function(name){
-  list(
+  reactiveValues(
     path = cache_file(name),
     id_path = cache_identity_file(name),
     data = NULL,
@@ -37,16 +37,24 @@ read_cache = function(name){
   
   # Read the data if the file exists and has been updated
   path = .cache[[name]]$path
+  id_path = .cache[[name]]$id_path
   time = file.mtime(path)
+  
   if (!file.exists(path)){
-    cat(sprintf("Cache '%s' does not exist\n", name))
+    cat(sprintf("Cache '%s' has not been saved\n", name))
   } else if (time > .cache[[name]]$last_cache_time){
     data = readRDS(path)
-    id_data = readRDS(.cache[[name]]$id_path)
     .cache[[name]]$data <<- data
-    .cache[[name]]$id_data <<- id_data
     .cache[[name]]$last_cache_time <<- time
     cat(sprintf("Loaded cache '%s' from file\n", name))
+  }
+  
+  if (!file.exists(id_path)){
+    cat(sprintf("Identity data for cache '%s' has not been saved\n", name))
+  } else if (time > .cache[[name]]$last_cache_time){
+    id_data = readRDS(id_path)
+    .cache[[name]]$id_data <<- id_data
+    cat(sprintf("Loaded identity data for cache '%s' from file\n", name))
   }
   
   # Return the data
@@ -60,16 +68,19 @@ write_cache = function(data_reactive, name, id_data = NULL){
     add_cache(name)
   }
   
-  # Do not write if the identity data is the same
-  if(!is.null(id_data) && identical(id_data, .cache[[name]]$id_data)){
-    cat(sprintf("Identity data for cache '%s' is the same; not writing\n", name))
-    return()
-  } else {
-    # If the identity data is different, write it to file and update the cache object
-    saveRDS(id_data, .cache[[name]]$id_path)
-    .cache[[name]]$id_data <<- id_data
-    cat(sprintf("Updated identity data for cache '%s' to file\n", name))
-  }
+  # Skip the identity check if no identity data is provided
+  if(!is.null(id_data)){
+    # Do not write if the identity data is the same as the last time
+    if(identical(id_data, .cache[[name]]$id_data)){
+      cat(sprintf("Identity data for cache '%s' is the same; not writing\n", name))
+      return()
+    } else {
+      # If the identity data is different, write it to file and update the cache object
+      saveRDS(id_data, .cache[[name]]$id_path)
+      .cache[[name]]$id_data <<- id_data
+      cat(sprintf("Updated identity data for cache '%s' to file\n", name))
+    }
+  } 
   
   # If the data is different, write it to file and update the cache object
   data = data_reactive()

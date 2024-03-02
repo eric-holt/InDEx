@@ -13,7 +13,7 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
     if (debugging) debug_server(environment())
     
     output$UI = renderUI({
-      if(is.null(dt_enrich()) && is.null(dt_res())){
+      if(is.null(dt_enrich()) && is.null(dt_res)){
         return(caution("No data"))
       }
       tagList(
@@ -60,12 +60,12 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
     observe_input(ns("num_n"), n)
     
     data_identity = reactive({
-      req(dt_res())
-      dt_res()[, .(baseMean, pvalue, padj, log2FoldChange)] |> na.omit() |> colSums() |> unname()
+      req(dt_res)
+      dt_res[, .(baseMean, pvalue, padj, log2FoldChange)] |> na.omit() |> colSums() |> unname()
     })
     
     output$data_identity = renderUI({
-      req(dt_res(), data_identity())
+      req(dt_res, data_identity())
       if(!identical(data_identity(), cache_identity("enrich_go")) || !identical(data_identity(), cache_identity("gsea_go"))) {
         caution("Data changed")
       } else {
@@ -84,13 +84,13 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
     })
     
     gsea_go = reactive({
-      req(dt_res())
+      req(dt_res)
       cat("Computing GO GSEA...\n")
-      get_all_gsea(dt_res(), 1, mings(), maxgs())
+      get_all_gsea(dt_res, 1, mings(), maxgs())
     })
     
     observe({
-      req(dt_res(), dt_enrich())
+      req(dt_res, dt_enrich())
       
       .re$enrich_go = cache(enrich_go, "enrich_go", data_identity())
       .re$gsea_go = cache(gsea_go, "gsea_go", data_identity())

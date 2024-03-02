@@ -31,7 +31,7 @@ ui = fixedPage(
                column(2,
                       observedNumericInput("num_lfc", "Log2FC", .5, 0, 2)),
                column(6,
-                      observedCheckboxInput("chk_only_sig", "Test LRT-significant genes only", F),
+                      # observedCheckboxInput("chk_only_sig", "Test LRT-significant genes only", F),
                       observedCheckboxInput("chk_go_pred", "Enrichment with prediction outliers", F))
                ),
               observedCheckboxInput("chk_same_as_wald", "Use same α for LRT", T)

@@ -7,7 +7,7 @@ four_way_ui = function(ns = identity, id = "4way"){
   )
 }
 
-four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
+four_way_server = function(a, lfc, selected_sig, id = "4way"){
   moduleServer(id, function(input, output, session) {
     ns = session$ns
     
@@ -23,7 +23,7 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     if (debugging) debug_server(environment())
     
     output$UI = renderUI({
-      if(is.null(dt_res())){
+      if(is.null(read_cache("dt_res"))){
         caution("No data to plot")
       } else{
         tagList(
@@ -78,9 +78,9 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     
     # 4-way plot (x vs y) dataset
     dt = reactive({
-      req(dt_res(), x(), y(), a(), lfc(), x() != y())
+      req(x(), y(), a(), lfc(), x() != y())
       cat(sprintf("Creating the %s vs %s dataset...\n", x(), y()))
-      dt_4way(dt_res(), x(), y(), a(), lfc())
+      dt_4way(read_cache("dt_res"), x(), y(), a(), lfc())
     }) |> debounce(1000)
     
     # Data points outside the prediction interval
@@ -152,13 +152,18 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
     }) |> debounce(1000)
     
     # Output may be used for GO
-    out = reactiveVal()
-    observe({
+    out = reactive({
+      req(dt_outlier())
       tryCatch(dt_outlier()[, .(feature_id, gene_id, gene_name, label)], 
-      error = function(e) NULL) %>% out 
+               error = function(e) NULL) 
     })
     
-    return(out)
+    
+    observe({
+      req(x(), y(), a(), lfc(), conf())
+      write_cache(out, "outliers", c(x(), y(), a(), lfc(), conf()))
+      .re$dt_outlier = out()
+    })
   })
 }
 

@@ -33,8 +33,8 @@ server = function(input, output, session){
   lfc = reactive(as.numeric(input$num_lfc))
   observe_input("num_lfc", lfc)
   
-  only_sig = reactive(input$chk_only_sig)
-  observe_input("chk_only_sig", only_sig)
+  # only_sig = reactive(input$chk_only_sig)
+  # observe_input("chk_only_sig", only_sig)
   
   go_pred = reactive(input$chk_go_pred)
   observe_input("chk_go_pred", go_pred)
@@ -62,87 +62,143 @@ server = function(input, output, session){
   home_server()
   
   # Data filtering
-  filtered_data = data_server()
+  # filtered_data = data_server()
+  data_server()
   
-  observe({
-    req(filtered_data(), .dt_count)
+  
+  dds = reactive({
+    features = read_cache("included")
+    samples = read_cache("samples")
+    req(features, samples, .dt_count)
     cat("Updating filtered features...\n")
-    .r$dds = filtered_data()
-    .re$genes <<- unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
+    .re$genes <<- unique(.dt_count[feature_id %in% features, gene_id])
+    .dds[features, samples]
   })
   
-  observe({
-    req(.r$dds, lrt_a())
+  # observe({
+  #   features = read_cache("included")
+  #   samples = read_cache("samples")
+  #   req(features, samples, .dt_count)
+  #   cat("Updating filtered features...\n")
+  #   .r$dds = .dds[features, samples]
+  #   .re$genes <<- unique(.dt_count[feature_id %in% features, gene_id])
+  # })
+  
+  # observe({
+  #   req(filtered_data(), .dt_count)
+  #   cat("Updating filtered features...\n")
+  #   .r$dds = filtered_data()
+  #   .re$genes <<- unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
+  # })
+  
+  dt_lrt_sig = reactive({
+    req(dds(), lrt_a())
     cat("Updating dt_lrt_sig...\n")
-    .re$dt_lrt_sig <<- get_dt_lrt(.r$dds, lrt_a())
+    .re$dt_lrt_sig <<- get_dt_lrt(dds(), lrt_a())
+    .re$dt_lrt_sig
   })
   
-  observe({
-    req(.r$dds, .re$dt_lrt_sig)
+  # observe({
+  #   req(.r$dds, lrt_a())
+  #   cat("Updating dt_lrt_sig...\n")
+  #   .re$dt_lrt_sig <<- get_dt_lrt(.r$dds, lrt_a())
+  # })
+  
+  dds_lrt_sig = reactive({
+    req(dds(), dt_lrt_sig())
     cat("Updating dds_lrt_sig...\n")
-    .r$dds_lrt_sig = .r$dds[.re$dt_lrt_sig[, feature_id], ]
+    dds()[dt_lrt_sig()$feature_id, ]
+  })
+  
+  # observe({
+  #   req(.r$dds, .re$dt_lrt_sig)
+  #   cat("Updating dds_lrt_sig...\n")
+  #   .r$dds_lrt_sig = .r$dds[.re$dt_lrt_sig[, feature_id], ]
+  # })
+  
+  # observe({
+  #   req(.r$dds_lrt_sig)
+  #   cat("Updating res_lrt...\n")
+  #   .r$res_lrt = get_res(.r$dds_lrt_sig)
+  # })
+  
+  res = reactive({
+    req(dds())
+    cat("Updating DESeq2 results...\n")
+    get_res(dds())
+  })
+  
+  # observe({
+  #   req(.r$dds)
+  #   cat("Updating DESeq2 results...\n")
+  #   .r$res = get_res(.r$dds)
+  # })
+  
+  # observe({
+  #   req(.r$res_lrt)
+  #   cat("Updating dt_res_lrt...\n")
+  #   .re$dt_res_lrt <<- dt_all_results(.r$res_lrt)
+  # })
+  
+  dt_res = reactive({
+    req(res())
+    cat("Updating dt_res...\n")
+    dt_all_results(res())
   })
   
   observe({
-    req(.r$dds_lrt_sig)
-    cat("Updating res_lrt...\n")
-    .r$res_lrt = get_res(.r$dds_lrt_sig)
+    req(dt_res())
+    write_cache(dt_res, "dt_res", c(cache_identity("included"), read_cache("samples")))
+    .re$dt_res <<- dt_res()
   })
   
-  observe({
-    req(.r$dds)
-    cat("Updating res_all...\n")
-    .r$res_all = get_res(.r$dds)
-  })
+  # observe({
+  #   req(.r$res)
+  #   cat("Updating dt_res_all...\n")
+  #   .re$dt_res <<- dt_all_results(.r$res)
+  # })
   
-  observe({
-    req(.r$res_lrt)
-    cat("Updating dt_res_lrt...\n")
-    .re$dt_res_lrt <<- dt_all_results(.r$res_lrt)
-  })
-  
-  observe({
-    req(.r$res_all)
-    cat("Updating dt_res_all...\n")
-    .re$dt_res_all <<- dt_all_results(.r$res_all)
-  })
-  
-  observe({
-    if(only_sig()){
-      req(.re$dt_res_lrt)
-      cat("Updating dt_res with dt_res_lrt...\n")
-      .r$dt_res = .re$dt_res_lrt 
-    }
-    else{
-      req(.re$dt_res_all)
-      cat("Updating dt_res with dt_res_all...\n")
-      .r$dt_res = .re$dt_res_all 
-    }
-  })
+  # observe({
+  #   # if(only_sig()){
+  #   #   req(.re$dt_res_lrt)
+  #   #   cat("Updating dt_res with dt_res_lrt...\n")
+  #   #   .r$dt_res = .re$dt_res_lrt 
+  #   # }
+  #   # else{
+  #     req(.re$dt_res_all)
+  #     cat("Updating dt_res with dt_res_all...\n")
+  #     .r$dt_res = .re$dt_res_all 
+  #   # }
+  # })
   
   # PCA
-  pca_panel_server(reactive(.r$dds), reactive(.r$dds_lrt_sig))
+  pca_panel_server(dds, dds_lrt_sig)
   
-  # Significant genes
-  observe({
-    req(.r$dt_res)
-    .re$dt_sig <<- get_dt_sig(.r$dt_res, a(), lfc())
-  }) |> debounce(1000)
+  # Significant 
+  dt_sig = reactive({
+    req(dt_res(), a())
+    cat("Updating dt_sig...\n")
+    .re$dt_sig <<- get_dt_sig(dt_res(), a())
+    .re$dt_sig
+  })
   
-  selected = sig_server(reactive(.re$dt_sig), reactive(.re$dt_lrt_sig))
+  # observe({
+  #   req(.r$dt_res)
+  #   .re$dt_sig <<- get_dt_sig(.r$dt_res, a(), lfc())
+  # }) |> debounce(1000)
+  
+  selected = sig_server(dt_sig, dt_lrt_sig)
   
   # Plots
-  dt_outlier = four_way_server(reactive(.r$dt_res), a, lfc, selected)
-  observe({
-    .re$dt_outlier = dt_outlier()
-  })
-  volcano_ma_server(reactive(.r$dt_res), a, lfc, selected)
+  four_way_server(a, lfc, selected)
+   
+  volcano_ma_server(a, lfc, selected)
   
   # clusterProfiler
   dt_go = reactive({
-    if(go_pred()) .re$dt_outlier
-    else .re$dt_sig
+    if(go_pred()) read_cache("outliers")
+    else dt_sig()
   })
-  gsea_server(dt_go, reactive(.re$genes), reactive(.re$dt_res_all))
+  gsea_server(dt_go, .re$genes, read_cache("dt_res"))
   
 }

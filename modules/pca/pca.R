@@ -12,6 +12,7 @@ pca_server = function(dds, id = "pca") {
     if (debugging) debug_server(environment())
     ns = session$ns
     
+    
     output$UI = renderUI({
       if(is.null(dds()) || !nrow(dds())){
         caution("No data")
@@ -28,9 +29,15 @@ pca_server = function(dds, id = "pca") {
     })
     
     # Data identity for checking the cache need
-    data_identity = reactive({
+    pca_identity = reactive({
       req(dds())
       c(nrow(dds()), colnames(dds()))
+    })
+    
+    observe({
+      req(pca_identity())
+      write_cache(pca, ns("pca"), pca_identity())
+      .re$pca <<- pca()
     })
     
     # Number of PCs for plot scaling
@@ -40,9 +47,7 @@ pca_server = function(dds, id = "pca") {
     
     # All plots in one UI for data caching and lazy reaction
     output$plots = renderUI({
-      req(data_identity())
-      # Store the PCA result in exportable reactive data, while caching the data
-      .re$pca <<- cache(pca, ns("pca"), data_identity())
+      req(pca_identity())
       tagList(
         plotlyOutput(ns("scat"), 500, 300),
         plotlyOutput(ns("all_pc"), 40 * n() + 80, 300),

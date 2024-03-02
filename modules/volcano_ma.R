@@ -7,13 +7,13 @@ volcano_ma_ui = function(ns = identity, id = "vol_ma"){
   )
 }
 
-volcano_ma_server = function(dt_res, alpha, lfc, sg, id = "vol_ma"){
+volcano_ma_server = function(alpha, lfc, sg, id = "vol_ma"){
   moduleServer(id, function(input, output, session) {
     ns = session$ns
     if (debugging) debug_server(environment())
     
     output$UI = renderUI({
-      if(is.null(dt_res())){
+      if(is.null(read_cache("dt_res"))){
         return(caution("No data to plot"))
       }
       tagList(
@@ -37,21 +37,21 @@ volcano_ma_server = function(dt_res, alpha, lfc, sg, id = "vol_ma"){
     # Volcano plot
     output$volcano = renderPlotly({
       cat("Rendering the volcano plot...\n")
-      store_plots(suppressWarnings(gg_volcano(dt_res(), alpha(), lfc(), sg())), "volcano", plotly_volcano)
+      store_plots(suppressWarnings(gg_volcano(read_cache("dt_res"), alpha(), lfc(), sg())), "volcano", plotly_volcano)
       .pl[["volcano"]]
     })
     
     # MA plot
     output$ma = renderPlotly({
       cat("Rendering the MA plot...\n")
-      store_plots(suppressWarnings(gg_MA(dt_res(), alpha(), lfc(), sg())), "MA", plotly_MA)
+      store_plots(suppressWarnings(gg_MA(read_cache("dt_res"), alpha(), lfc(), sg())), "MA", plotly_MA)
       .pl[["MA"]]
     })
     
     # p-value histogram
     output$p_hist = renderPlotly({
       cat("Rendering the p-value histogram...\n")
-      store_plots(suppressWarnings(gg_p_hist(dt_res(), bins())), "p_hist", plotly_p_hist)
+      store_plots(suppressWarnings(gg_p_hist(read_cache("dt_res"), bins())), "p_hist", plotly_p_hist)
       .pl[["p_hist"]]
     })
   })
