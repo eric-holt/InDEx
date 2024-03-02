@@ -61,54 +61,50 @@ gsea_server = function(dt_enrich, genes, dt_res, id = "gsea") {
     
     data_identity = reactive({
       req(dt_res())
-      dt_res()[, .(feature_id, log2FoldChange, label)]
+      dt_res()[, .(baseMean, pvalue, padj, log2FoldChange)] |> na.omit() |> colSums() |> unname()
     })
     
     output$data_identity = renderUI({
-      req(dt_res(), cashed_data_identity("gsea"))
-      if(is_data_updated(data_identity(), "gsea"))
+      req(dt_res(), data_identity())
+      if(!identical(data_identity(), cache_identity("enrich_go")) || !identical(data_identity(), cache_identity("gsea_go"))) {
         caution("Data changed")
-      else
+      } else {
         span("Data not changed", icon("check"), style = "color: green;")
+      }
+    })
+    
+    enrich_go = reactive({
+      req(dt_enrich())
+      if(!is.null(dt_enrich()) && nrow(dt_enrich()) > 0){
+        cat("Computing GO enrichment...\n")
+        get_enrich_go(dt_enrich(), genes(), 1, 1, mings(), maxgs())
+      } else {
+        NULL
+      }
+    })
+    
+    gsea_go = reactive({
+      req(dt_res())
+      cat("Computing GO GSEA...\n")
+      get_all_gsea(dt_res(), 1, mings(), maxgs())
     })
     
     observe({
-      req(dt_res())
-      write_cache(dt_res()[, .(feature_id, log2FoldChange, label)], "gsea_last_data")
-      if(!is.null(dt_enrich()) && nrow(dt_enrich()) > 0){
-        cat("Computing GO enrichment...\n")
-        .re$enrich_go = get_enrich_go(dt_enrich(), genes(), 1, 1, mings(), maxgs())
-        write_cache(.re$enrich_go, "enrich_go")
-        cat("Done Computing GO enrichment\n")
-      } else {
-        .re$enrich_go = NULL
-        write_cache(.re$enrich_go, "enrich_go")
-      }
-      cat("Computing GO GSEA...\n")
-      .re$gsea_go = get_all_gsea(dt_res(), 1, mings(), maxgs())
-      write_cache(.re$gsea_go, "gsea_go")
-      cat("Done Computing GO GSEA\n")
+      req(dt_res(), dt_enrich())
+      
+      .re$enrich_go = cache(enrich_go, "enrich_go", data_identity())
+      .re$gsea_go = cache(gsea_go, "gsea_go", data_identity())
     }) |> bindEvent(input$btn_cp)
     
-    enrich_go = reactive({
-      .re$enrich_go
-      cashed_data("enrich_go")
-    })
 
-    gsea_go = reactive({
-      .re$gsea_go
-      cashed_data("gsea_go")
-    })
+    go_panels_server(read_cache("enrich_go"), p, q, n, sort, "enrich_go")
     
-    plt_lists = list(
-      enrich_go = go_panels_server(enrich_go, p, q, n, sort, "enrich_go"),
-      gsea_go = go_panels_server(gsea_go, p, q, n, sort, "gsea_go")
-    )
+    go_panels_server(read_cache("gsea_go"), p, q, n, sort, "gsea_go")
 
     observe({
       updateNumericInput(inputId = "num_n", value = 10)
-      updateNumericInput(inputId = "num_pvalueCutoff", value = .05)
-      updateNumericInput(inputId = "num_qvalueCutoff", value = .2)
+      updateNumericInput(inputId = "num_pvalueCutoff", value = 1)
+      updateNumericInput(inputId = "num_qvalueCutoff", value = .5)
       updateNumericInput(inputId = "num_minGSSize", value = 10)
       updateNumericInput(inputId = "num_maxGSSize", value = 500)
       updateRadioButtons(inputId = "rbn_sort", selected = "p-value")

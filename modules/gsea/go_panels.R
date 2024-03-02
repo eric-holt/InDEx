@@ -13,7 +13,7 @@ go_panels_server = function(data_list, p, q, n, sort, id = "go_panels") {
     
     ui_go_panels = function(){
       ui_ont = function(ont){
-        names(data_list()) |> lapply(function(l){
+        names(data_list) |> lapply(function(l){
           tabPanel(l, gs_plot_ui(ns, paste(l, ont, sep = "_")))
         }) %>% do.call(tabsetPanel, .)
       }
@@ -29,10 +29,10 @@ go_panels_server = function(data_list, p, q, n, sort, id = "go_panels") {
     
     dt_top_n = reactiveVal()
     observe({
-      req(data_list(), n(), sort(), p(), q())
-      names(data_list()) |> lapply(function(l){
-        names(data_list()[[l]]) |> lapply(function(ont){
-          dt = get_dt_top_n_go(data_list()[[l]][[ont]], n(), sort(), p(), q())
+      req(data_list, n(), sort(), p(), q())
+      names(data_list) |> lapply(function(l){
+        names(data_list[[l]]) |> lapply(function(ont){
+          dt = get_dt_top_n_go(data_list[[l]][[ont]], n(), sort(), p(), q())
           if(is.null(dt)) return()
           dt[, `:=`(label = l, ontology = ont)]
         }) %>% rbindlist

@@ -17,6 +17,10 @@
   here(.dir_project(project, user), "cache")
 }
 
+.dir_cache_identity = function(project = .project, user = .user){
+  here(.dir_cache(project, user), "identity")
+}
+
 .dir_export_gg = function(project = .project, user = .user){
   here(.dir_project(project, user), "exported_ggplot")
 }

@@ -1,83 +1,115 @@
-# Read cashed data if the file has been updated since the last time it was read
+# List to store the cache objects
+.cache = list()
+
+# Cache object to store the file path, current data, identity data, and last cache time
+new_cache_obj = function(name){
+  list(
+    path = cache_file(name),
+    id_path = cache_identity_file(name),
+    data = NULL,
+    id_data = NULL,
+    last_cache_time = as.POSIXct("1970-01-01 00:00:00", tz = "UTC")
+  )
+}
+
+# Shortcut for the cache file path
+cache_file = function(name){
+  here(.dir_cache(), paste0(name, ".rds"))
+}
+
+# Shortcut for the cache identity file path
+cache_identity_file = function(name){
+  here(.dir_cache_identity(), paste0(name, ".rds"))
+}
+
+# Add a new cache object to the list
+add_cache = function(name){
+  .cache[[name]] <<- new_cache_obj(name)
+  cat(sprintf("Added cache object '%s'\n", name))
+}
+
+# Read cached data if the file has been updated since the last time it was read
 read_cache = function(name){
-  path = here(.dir_cache(), paste0(name, ".rds"))
-  if (file.exists(path)){
-    if (file.info(path)$mtime > .last_cache_time){
-      data = readRDS(path) 
-      cat("\tLoaded cached data", name, "\n")
-    } else {
-      data = NULL
-      cat("\tCached data", name, "is not updated\n")
-    }
-    data = readRDS(path) 
-    cat("\tLoaded cached data", name, "\n")
+  # Create the cache object if it doesn't exist
+  if(!exists(name, .cache)){
+    add_cache(name)
   }
-  else {
-    data = NULL
-    cat("\tCache", name, "has not been saved\n")
+  
+  # Read the data if the file exists and has been updated
+  path = .cache[[name]]$path
+  time = file.mtime(path)
+  if (!file.exists(path)){
+    cat(sprintf("Cache '%s' does not exist\n", name))
+  } else if (time > .cache[[name]]$last_cache_time){
+    data = readRDS(path)
+    id_data = readRDS(.cache[[name]]$id_path)
+    .cache[[name]]$data <<- data
+    .cache[[name]]$id_data <<- id_data
+    .cache[[name]]$last_cache_time <<- time
+    cat(sprintf("Loaded cache '%s' from file\n", name))
   }
-  .cached[[name]] <<- data
+  
+  # Return the data
+  .cache[[name]]$data
+}
+
+# Write data to the cache, updating the cache object
+write_cache = function(data_reactive, name, id_data = NULL){
+  # Create the cache object if it doesn't exist
+  if(!exists(name, .cache)){
+    add_cache(name)
+  }
+  
+  # Do not write if the identity data is the same
+  if(!is.null(id_data) && identical(id_data, .cache[[name]]$id_data)){
+    cat(sprintf("Identity data for cache '%s' is the same; not writing\n", name))
+    return()
+  } else {
+    # If the identity data is different, write it to file and update the cache object
+    saveRDS(id_data, .cache[[name]]$id_path)
+    .cache[[name]]$id_data <<- id_data
+    cat(sprintf("Updated identity data for cache '%s' to file\n", name))
+  }
+  
+  # If the data is different, write it to file and update the cache object
+  data = data_reactive()
+  path = .cache[[name]]$path
+  saveRDS(data, path)
+  .cache[[name]]$data <<- data
+  .cache[[name]]$last_cache_time <<- file.mtime(path)
+  cat(sprintf("Updated cache '%s' to file\n", name))
   data
 }
 
-read_all_cache = function(){
-  list.files(.dir_cache(), ".rds$") |> str_remove(".rds$") |> lapply(read_cache)
-  invisible()
-}
-
-write_cache = function(data, name){
-  .cached[[name]] <<- data
-  dir.create(.dir_cache(), recursive = T, showWarnings = F)
-  path = here(.dir_cache(), paste0(name, ".rds"))
-  saveRDS(data, path)
-  cat("Saved cached data", name, "\n")
-}
-
-# Convenience functions---- 
-cashed_data = function(name){
-  .cached[[name]]
-}
-
-is_cached = function(name){
-  !is.null(cashed_data(name))
-}
-
-cashed_data_identity = function(name){
-  .cached[[paste0(name, "_last_data")]]
-}
-
-record_data_identity = function(data_identity, name){
-  write_cache(data_identity, paste0(name, "_last_data"))
-}
-
-is_data_updated = function(data_identity, name){
-  !identical(data_identity, cashed_data_identity(name))
-}
-
-is_new = function(data_identity, name){
-  !is_cached(name) || is_data_updated(data_identity, name)
-}
-
-update_cache = function(reactive_object, data_identity, name){
-  cat(sprintf("Updating cache for '%s'...\n", name))
-  record_data_identity(data_identity, name)
-  write_cache(reactive_object(), name)
-}
-
-auto_update_cache = function(reactive_object, data_identity, name){
-  if(is_new(data_identity, name)){
-    update_cache(reactive_object, data_identity, name)
+# Clear the cache
+clear_cache = function(name){
+  # Remove the cache object
+  if(exists(name, .cache)){
+    .cache[[name]] <<- NULL
+    cat(sprintf("Removed cache object '%s'\n", name))
+  }
+  
+  # Remove the file
+  path = cache_file(name)
+  if(file.exists(path)){
+    file.remove(path)
+    cat(sprintf("Removed cache file '%s'\n", .relative(path)))
   }
 }
 
-# Use cache if data identity has changed
-auto_cache = function(reactive_object, data_identity, name){
-  auto_update_cache(reactive_object, data_identity, name)
-  cashed_data(name)
+# Shortcut to get the identity data from the cache
+cache_identity = function(name){
+  .cache[[name]]$id_data
 }
 
-# Use cache if a condition is met
-get_cache_if = function(reactive_object, condition, name){
-  if(!is_cached(name) || !condition) write_cache(reactive_object(), name)
-  cashed_data(name)
+# Automatically read or write the cache based on the identity data
+cache = function(data_reactive, name, id_data = NULL){
+  # Read the cache if the identity is the same
+  if(!is.null(id_data) && identical(id_data, cache_identity(name))){
+    read_cache(name)
+  } else {
+    # Otherwise, write the new data to the cache and return it
+    write_cache(data_reactive, name, id_data)
+  }
 }
+

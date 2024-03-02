@@ -6,7 +6,6 @@ load_project = function(input){
   names(.g) |> lapply(function(name) {.g[[name]] = NULL})
   names(.r) |> lapply(function(name) {.r[[name]] = NULL})
   names(.re) |> lapply(function(name) {.re[[name]] = NULL})
-  names(.cached) |> lapply(function(name) {.cached[[name]] = NULL})
   
   # Update project name
   assign_global(.next_project, "project")
@@ -16,7 +15,6 @@ load_project = function(input){
   
   read_project_metadata()
   read_all_data()
-  read_all_cache()
   read_input_state()
   
   org.Mm.eg.db |> assign_global("org")
