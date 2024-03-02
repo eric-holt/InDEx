@@ -35,10 +35,12 @@ four_way_server = function(dt_res, a, lfc, selected_sig, id = "4way"){
                        column(4,
                               observedNumericInput(ns("num_conf"), "Confidence level", 0.95, 0, 1))),
                      fixedRow(
-                       column(6,
+                       column(4,
                               checkboxInput(ns("chk_interval"), "Show intervals")),
-                       column(6,
-                              checkboxInput(ns("chk_lf_se"), "Show LFC standard errors"))
+                       column(4,
+                              checkboxInput(ns("chk_lf_se"), "Show LFC standard errors")),
+                       column(4,
+                              radioButtons(ns("rbn_p_lfc"), "Metric", c("Signed log(p)", "LFC"), "signed log(p)"))
                      )),
                    uiOutput(ns("out"))),
             column(4,

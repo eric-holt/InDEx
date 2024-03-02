@@ -41,22 +41,22 @@ add_positions = function(dt){
 
 # Make all project directories
 make_all_dir = function(project = .project){
-  for(dir in list(dir_cache, dir_export_gg, dir_export_pl, dir_export_re, dir_import)){
+  for(dir in list(.dir_cache, .dir_export_gg, .dir_export_pl, .dir_export_re, .dir_import)){
     dir.create(dir(project), recursive = T, showWarnings = F)
   }
 }
 
 # Save the imported data
 import_data = function(data, name, project){
-  path = here(dir_import(project), paste0(name, ".rds"))
+  path = here(.dir_import(project), paste0(name, ".rds"))
   saveRDS(data, path)
   cat("\tSaved data", name, "\n")
 }
 
 # Save the project metadata
 save_project_metadata = function(project = .project){
-  path = here(dir_project(project), "metadata.rds")
-  if(check_path(dir_project(project))){
+  path = here(.dir_project(project), "metadata.rds")
+  if(check_path(.dir_project(project))){
     saveRDS(.metadata, path)
     cat("Saved metadata\n")
   }
@@ -64,7 +64,7 @@ save_project_metadata = function(project = .project){
 
 # Read the project metadata
 read_project_metadata = function(project = .project){
-  path = here(dir_project(project), "metadata.rds")
+  path = here(.dir_project(project), "metadata.rds")
   if(check_path(path)){
     .metadata <<- readRDS(path)
   } else {

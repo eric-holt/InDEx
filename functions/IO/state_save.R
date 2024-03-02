@@ -15,18 +15,18 @@ read_last_project = function(){
 
 # Save the current project name
 save_current_project = function(){
-  if(check_path(dir_user())){
-    saveRDS(.project, here(dir_user(), ".project.rds"))
+  if(check_path(.dir_user())){
+    saveRDS(.project, here(.dir_user(), ".project.rds"))
     cat(sprintf("Saved current project name '%s'\n", .project))
   }
 }
 
 # Read input states
 read_input_state = function(){
-  path = here(dir_project(), "input_state.rds")
+  path = here(.dir_project(), "input_state.rds")
   if (check_path(path)) {
     .saved_input_state <<- readRDS(path)
-    cat(sprintf("Loaded the saved input state from '%s'\n", relative(path)))
+    cat(sprintf("Loaded the saved input state from '%s'\n", .relative(path)))
   } else {
     .saved_input_state <<- list()
   }  
@@ -34,8 +34,8 @@ read_input_state = function(){
 
 # Save input states
 save_input_state = function(){
-  if (check_path(dir_project())) {
-    saveRDS(.saved_input_state, here(dir_project(), "input_state.rds"))
+  if (check_path(.dir_project())) {
+    saveRDS(.saved_input_state, here(.dir_project(), "input_state.rds"))
     cat("\t\tSaved input states\n")
     trigger_state_save(F)
   }

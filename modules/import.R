@@ -28,7 +28,7 @@ import_ui = function(ns = identity, id = "import"){
     set_button_positions(),
     wellPanel(
       fixedRow(
-        column(7, selectInput(ns("sel_project"), "Change project", choices = projects(), selected = .project)),
+        column(7, selectInput(ns("sel_project"), "Change project", choices = .projects(), selected = .project)),
         column(5, actionGroupButtons(ns(c("btn_add", "btn_edit", "btn_del")), list(icon("plus"), icon("edit"), icon("trash"))))))
   )
 }
@@ -69,7 +69,7 @@ import_server = function(id = "import"){
       .temp$project_name_error <<- T
       if(name == "")
         caution("Project name is required")
-      else if(name %in% projects() && adding_new())
+      else if(name %in% .projects() && adding_new())
         caution(sprintf("Project '%s' already exists", name))
       else if(grepl(special, name))
         caution(sprintf("Special characters '%s' not allowed", special))
@@ -103,7 +103,7 @@ import_server = function(id = "import"){
     }
     
     update_project_list = function(selected_project){
-      updateSelectInput(inputId = "sel_project", choices = projects(), selected = selected_project)
+      updateSelectInput(inputId = "sel_project", choices = .projects(), selected = selected_project)
     }
     
     # Button actions----
@@ -122,7 +122,7 @@ import_server = function(id = "import"){
       removeModal()
       project = trimws(pn)
       if(project != .project){
-        file.rename(dir_project(.project), dir_project(project))
+        file.rename(.dir_project(.project), .dir_project(project))
         cat("Renamed project", .project, "to", project, "\n")
       }
       update_project(project, fg, fc, ft)
@@ -181,14 +181,14 @@ import_server = function(id = "import"){
       }
       
       save_project_metadata(project)
-      updateSelectInput(inputId = ns("project_name"), choices = projects(), selected = project)
+      updateSelectInput(inputId = ns("project_name"), choices = .projects(), selected = project)
       # queue_project_load(project)
     }
     
     # Delete ----
     delete_project = function(name){
       removeModal()
-      unlink(dir_project(name), recursive = T)
+      unlink(.dir_project(name), recursive = T)
       update_project_list("")
       cat("Deleted project", name, "\n")
     }

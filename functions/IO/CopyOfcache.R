@@ -1,14 +1,7 @@
-# Read cashed data if the file has been updated since the last time it was read
+# Read cashed data
 read_cache = function(name){
-  path = here(.dir_cache(), paste0(name, ".rds"))
+  path = here(dir_cache(), paste0(name, ".rds"))
   if (file.exists(path)){
-    if (file.info(path)$mtime > .last_cache_time){
-      data = readRDS(path) 
-      cat("\tLoaded cached data", name, "\n")
-    } else {
-      data = NULL
-      cat("\tCached data", name, "is not updated\n")
-    }
     data = readRDS(path) 
     cat("\tLoaded cached data", name, "\n")
   }
@@ -21,14 +14,14 @@ read_cache = function(name){
 }
 
 read_all_cache = function(){
-  list.files(.dir_cache(), ".rds$") |> str_remove(".rds$") |> lapply(read_cache)
+  list.files(dir_cache(), ".rds$") |> str_remove(".rds$") |> lapply(read_cache)
   invisible()
 }
 
 write_cache = function(data, name){
   .cached[[name]] <<- data
-  dir.create(.dir_cache(), recursive = T, showWarnings = F)
-  path = here(.dir_cache(), paste0(name, ".rds"))
+  dir.create(dir_cache(), recursive = T, showWarnings = F)
+  path = here(dir_cache(), paste0(name, ".rds"))
   saveRDS(data, path)
   cat("Saved cached data", name, "\n")
 }

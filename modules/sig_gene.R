@@ -17,7 +17,7 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
     })
 
     dt = reactive({
-      req(!no_data())
+      req(!no_data(), ncol(dt_sig()) == ncol(dt_lrt_sig()))
       rbind(dt_sig(), dt_lrt_sig())
     })
     
