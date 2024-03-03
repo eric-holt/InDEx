@@ -25,29 +25,17 @@ theme_set(theme_bw())
 # Global variables----
 .user = "Eric" # Dummy user name; maybe add authentication later
 
-.project = read_last_project() # Last used project name (or "")
+# Load the last project
+.project = read_last_project()
+queue_project_load(.project)
 
 .metadata = NULL # Project metadata
 
 .saved_input_state = NULL  # Saved input states (or a new list)
 
-# update_state("tbs_main", "Home") # To avoid panel events triggering
-
-.g = reactiveValues() # Reactives for project-specific constants
-.r = reactiveValues() # Dynamic reactives that need reset on project loading
-.cached = reactiveValues() # Cached data for expensive computations
-.temp = list(gene_types_selected = ss("data-cbg_gene_types"))
-
+# Status----
 .status_string = "" # For status display
 .status_updated = reactiveVal(F) # For real time status update
-
-.project_load_flag = reactiveVal(F) # React to project name change
-.project_load_complete = reactiveVal() # For UI refresh
-.next_project = .project # Project to be loaded
-
-.re = reactiveValues() # To store reactive data for export
-.gg = reactiveValues() # To store ggplot for export
-.pl = reactiveValues() # To store plotly for export
 
 # Constants----
 # Genes by gene types
@@ -71,9 +59,5 @@ genes_by_type = function(gtf){
     gtf[gene_biotype %like% "RNA" & !gene_biotype %like% "ncRNA"]$gene_id
   )
   genes[[8]] = setdiff(gtf$gene_id, unique(unlist(genes)))
-  genes
+  genes |> setNames(.gene_types)
 }
-
-
-
-

@@ -1,4 +1,10 @@
-# Get ready to load another project
+# React to project name changes
+.project_load_flag = reactiveVal(T) 
+
+# For UI refresh; contains the project name
+.project_load_complete = reactiveVal()
+
+# Set the next project to be loaded
 queue_project_load = function(next_project){
   .next_project <<- next_project
   .project_load_flag(T)
@@ -19,16 +25,15 @@ project_being_loaded = function(){
 }
 
 # For project-specific static data
-# Assign to global variables .name and global reactives g$name
+# Assign to global variables .[name]
 assign_global = function(data, name){
   assign(paste0(".", name), data, envir = .GlobalEnv)
-  .g[[name]] = data
   cat("\tAssigned global variable", name, "\n")
 }
 
 # Read imported static data
 read_data = function(name){
-  path = here(dir_import(), paste0(name, ".rds"))
+  path = here(.dir_import(), paste0(name, ".rds"))
   if (check_path(path)){
     data = readRDS(path) 
     cat("\tLoaded data", name, "\n")
@@ -43,9 +48,8 @@ read_data = function(name){
 
 # Read all imported static data upon project loading
 read_all_data =function(){
-  if(check_path(dir_import())){
-    list.files(dir_import(), ".rds$") |> str_remove(".rds$") |> lapply(read_data)
+  if(check_path(.dir_import())){
+    list.files(.dir_import(), ".rds$") |> str_remove(".rds$") |> lapply(read_data)
     invisible()
   }
 }
-

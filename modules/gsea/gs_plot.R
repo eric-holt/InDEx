@@ -11,6 +11,7 @@ gs_plot_server = function(dt, id) {
     ns = session$ns
     if (debugging) debug_server(environment())
     
+    # UI
     output$ui_term_plots = renderUI({
       req(dt())
       h = max(38 * nrow(dt()) + 20, 300)
@@ -19,26 +20,22 @@ gs_plot_server = function(dt, id) {
         column(6, DTOutput(ns("DT"))))
     })
     
-
+    # Plot
     output$plotly = renderPlotly({
       req(dt())
       cat("Rendering", id, "dot plot...\n")
       plot_id = str_split_1(ns(id), "-")[2:3] |> paste(collapse = "_")
       store_plots(suppressWarnings(gg_dotplot(dt())), plot_id, plotly_dotplot)
-      .pl[[plot_id]]
     })
     
     output$DT = renderDT({
-      cat("Rendering", id, "datatable...\n")
       req(dt())
+      cat("Rendering", id, "datatable...\n")
       d = dt() %>% hyperlink_go_term
       d[, .(Description, qvalue, setSize)] |>
         datatable(escape = F, rownames = F, selection = "none",
                   options = list(search = list(regex = T, smart = T))) |> 
         formatSignif(2, digits = 3)
     })
-    
-    plt = reactive(gg_dotplot(dt()))
-    return(plt)
   })
 }

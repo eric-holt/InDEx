@@ -1,4 +1,3 @@
-
 # Get numerical values of PCA used by plotPCA()
 get_pca = function(dds){
   tryCatch({
@@ -65,7 +64,6 @@ gg_all_pc = function(pca, colors = .cond_colors){
 plotly_all_pc = function(gg){
   ggplotly(gg, tooltip = "text")
 }
-
 
 # PCA hierarchical clustering heatmap
 pca_hc_heatmap = function(pca){

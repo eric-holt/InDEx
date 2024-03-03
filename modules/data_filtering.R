@@ -82,38 +82,32 @@ data_server = function(id = "data") {
       }) |> debounce(2000)
     observe_input(ns("cbg_samples"), sp)
     
-    mc = reactive(as.numeric(input$num_min_count))
+    mc = reactive(as.numeric(input$num_min_count)) |> debounce(2000)
     observe_input(ns("num_min_count"), mc)
     
-    mn = reactive(as.numeric(input$num_min_norm))
+    mn = reactive(as.numeric(input$num_min_norm)) |> debounce(2000)
     observe_input(ns("num_min_norm"), mn)
     
-    mt = reactive(as.numeric(input$num_min_tpm))
+    mt = reactive(as.numeric(input$num_min_tpm)) |> debounce(2000)
     observe_input(ns("num_min_tpm"), mt)
     
-    cr = reactive(as.numeric(input$num_rlog_cv))
+    cr = reactive(as.numeric(input$num_rlog_cv)) |> debounce(2000)
     observe_input(ns("num_rlog_cv"), cr)
     
-    cn = reactive(as.numeric(input$num_norm_cv))
+    cn = reactive(as.numeric(input$num_norm_cv)) |> debounce(2000)
     observe_input(ns("num_norm_cv"), cn)
     
-    ct = reactive(as.numeric(input$num_tpm_cv))
+    ct = reactive(as.numeric(input$num_tpm_cv)) |> debounce(2000)
     observe_input(ns("num_tpm_cv"), ct)
     
     gt = reactive(input$cbg_gene_types) |> debounce(2000)
     observe_input(ns("cbg_gene_types"), gt)
-    
-    i_gt = reactiveVal()
-    observe({
-      req(gt(), .temp$gene_types_choices, .temp$gene_types_selected)
-      which(.temp$gene_types_choices %in% .temp$gene_types_selected) %>% i_gt
-    })
-    
+
     # Feature filters
-    filtered = reactiveVal()
-    observe({
-      req(.g$dt_count, !project_being_loaded())
-      f = filter_by_count(.g$dt_count, mc()) |>
+    # by count/TPM
+    filtered = reactive({
+      req(.dt_count, !project_being_loaded(), mc(), mn(), mt(), cr(), cn(), ct())
+      f = filter_by_count(.dt_count, mc()) |>
         intersect(filter_by_count(.dt_norm, mn())) |>
         intersect(filter_by_cv(.dt_rlog, cr())) |>
         intersect(filter_by_cv(.dt_norm, cn()))
@@ -122,36 +116,65 @@ data_server = function(id = "data") {
           intersect(filter_by_count(.dt_tpm, mt())) |>
           intersect(filter_by_cv(.dt_tpm, ct()))
       }
-      f %>% filtered
+      f
     })
     
-    included = reactiveVal()
+    # by gene type; the final subset of features
+    included_ = reactive({
+      req(filtered(), !project_being_loaded(), gt())
+      exclude_gene(filtered(), gt())
+    })
+    
+    # Filtered features' gene IDs
+    genes_ = reactive({
+      req(included(), !project_being_loaded())
+      feature_to_gene(included())
+    })
+    
+    # Cache----
+    dds_identity = reactive({
+      req(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
+      c(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
+    })
+    
+    # Save the included features and genes when the filter inputs change
     observe({
-      req(filtered(), !project_being_loaded())
-      exclude_gene(filtered(), i_gt()) %>% included
+      req(dds_identity())
+      write_cache(included_, "included", dds_identity())
+      write_cache(genes_, "genes", dds_identity())
+    })
+
+    # Save the samples when the sample filter inputs change
+    observe({
+      req(sp(), !project_being_loaded())
+      write_cache(sp, "samples", sp())
+    })
+    
+    # Use the cache for visualization
+    included = reactive({
+      .cache_time$included
+      read_cache("included")
+    })
+    
+    samples = reactive({
+      .cache_time$samples
+      read_cache("samples")
     })
     
     # Count/TPM matrix display
     output$dt_count = renderDT({
-      req(.g$dt_count, all(sp() %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_count, sp(), included(), 0)
+      req(!project_being_loaded())
+      dt_display(.dt_count, samples(), included(), 0)
     })
+    
     output$dt_norm = renderDT({
-      req(.g$dt_norm, all(sp() %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_norm, sp(), included())
+      req(!project_being_loaded())
+      dt_display(.dt_norm, samples(), included())
     })
     
     output$dt_tpm = renderDT({
-      req(.g$dt_tpm, all(sp() %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_tpm, sp(), included())
-    })
-    
-    dds = reactiveVal()
-    observe({
       req(!project_being_loaded())
-      tryCatch({.g$dds[included(), sp()]}, error = function(e) NULL) %>% dds
+      dt_display(.dt_tpm, samples(), included())
     })
-
-    return(dds)
   })
 }

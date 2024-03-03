@@ -20,9 +20,17 @@ hc_ui = function(ns = identity, id = "hc"){
 hc_server = function(dds_sig, id = "hc") {
   moduleServer(id, function(input, output, session) {
     if (debugging) debug_server(environment())
-    output$count = renderPlotly(gene_hc_count(dds_sig()))
-    output$norm = renderPlotly(gene_hc_norm(dds_sig()))
-    output$tpm = renderPlotly(gene_hc_tpm(dds_sig()))
+    
+    output$count = renderPlotly({
+      store_plots(suppressWarnings(lrt_hc_count(dds_sig())), "LRT_hclust_count")
+    })
+    
+    output$norm = renderPlotly({
+      store_plots(suppressWarnings(lrt_hc_norm(dds_sig())), "LRT_hclust_norm")
+    })
+    
+    output$tpm = renderPlotly({
+      store_plots(suppressWarnings(lrt_hc_tpm(dds_sig())), "LRT_hclust_TPM")
+    })
   })
 }
-
