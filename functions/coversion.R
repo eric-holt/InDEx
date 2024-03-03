@@ -1,4 +1,3 @@
-
 # Gene <-> feature conversions, using .dt_count
 gene_to_feature = function(genes){
   .dt_count[gene_id %in% genes, feature_id]

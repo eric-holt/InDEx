@@ -3,7 +3,7 @@ trigger_state_save = reactiveVal(F)
 
 # Read the last project name
 read_last_project = function(){
-  path = here(dir_user(), ".project.rds")
+  path = here(.dir_user(), ".project.rds")
   if (check_path(path)){
     project = readRDS(path)
     if(is.character(project)) return(project)

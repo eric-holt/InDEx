@@ -6,7 +6,9 @@ server = function(input, output, session){
   observe(if(state_save_ready()) save_input_state())
   
   # Load project when flagged
-  observe(if(.project_load_flag()) load_project(input))
+  observe({
+    if(.project_load_flag()) load_project(input)
+  })
   
   # Show the current project
   output$project_name = renderUI({
@@ -33,9 +35,6 @@ server = function(input, output, session){
   lfc = reactive(as.numeric(input$num_lfc))
   observe_input("num_lfc", lfc)
   
-  # only_sig = reactive(input$chk_only_sig)
-  # observe_input("chk_only_sig", only_sig)
-  
   go_pred = reactive(input$chk_go_pred)
   observe_input("chk_go_pred", go_pred)
   
@@ -55,72 +54,34 @@ server = function(input, output, session){
     }
   })
   
-  # selected_tab = reactive(input$tbs_main)
-  # observe_input("tbs_main", selected_tab)
-  
   # Home
   home_server()
   
   # Data filtering
-  # filtered_data = data_server()
   data_server()
   
+  # Read cache when the cache time is updated
+  included = reactive({
+    .cache_time$included
+    read_cache("included")
+  })
   
+  samples = reactive({
+    .cache_time$samples
+    read_cache("samples")
+  })
+  
+  genes = reactive({
+    .cache_time$genes
+    read_cache("genes")
+  })
+  
+  # DESeq2 chain to update the result data.table
   dds = reactive({
-    features = read_cache("included")
-    samples = read_cache("samples")
-    req(features, samples, .dt_count)
-    cat("Updating filtered features...\n")
-    .re$genes <<- unique(.dt_count[feature_id %in% features, gene_id])
-    .dds[features, samples]
+    req(included(), samples())
+    cat("Subsetting DESeqDataSet...\n")
+    .dds[included(), samples()]
   })
-  
-  # observe({
-  #   features = read_cache("included")
-  #   samples = read_cache("samples")
-  #   req(features, samples, .dt_count)
-  #   cat("Updating filtered features...\n")
-  #   .r$dds = .dds[features, samples]
-  #   .re$genes <<- unique(.dt_count[feature_id %in% features, gene_id])
-  # })
-  
-  # observe({
-  #   req(filtered_data(), .dt_count)
-  #   cat("Updating filtered features...\n")
-  #   .r$dds = filtered_data()
-  #   .re$genes <<- unique(.dt_count[feature_id %in% rownames(filtered_data()), gene_id])
-  # })
-  
-  dt_lrt_sig = reactive({
-    req(dds(), lrt_a())
-    cat("Updating dt_lrt_sig...\n")
-    .re$dt_lrt_sig <<- get_dt_lrt(dds(), lrt_a())
-    .re$dt_lrt_sig
-  })
-  
-  # observe({
-  #   req(.r$dds, lrt_a())
-  #   cat("Updating dt_lrt_sig...\n")
-  #   .re$dt_lrt_sig <<- get_dt_lrt(.r$dds, lrt_a())
-  # })
-  
-  dds_lrt_sig = reactive({
-    req(dds(), dt_lrt_sig())
-    cat("Updating dds_lrt_sig...\n")
-    dds()[dt_lrt_sig()$feature_id, ]
-  })
-  
-  # observe({
-  #   req(.r$dds, .re$dt_lrt_sig)
-  #   cat("Updating dds_lrt_sig...\n")
-  #   .r$dds_lrt_sig = .r$dds[.re$dt_lrt_sig[, feature_id], ]
-  # })
-  
-  # observe({
-  #   req(.r$dds_lrt_sig)
-  #   cat("Updating res_lrt...\n")
-  #   .r$res_lrt = get_res(.r$dds_lrt_sig)
-  # })
   
   res = reactive({
     req(dds())
@@ -128,64 +89,41 @@ server = function(input, output, session){
     get_res(dds())
   })
   
-  # observe({
-  #   req(.r$dds)
-  #   cat("Updating DESeq2 results...\n")
-  #   .r$res = get_res(.r$dds)
-  # })
-  
-  # observe({
-  #   req(.r$res_lrt)
-  #   cat("Updating dt_res_lrt...\n")
-  #   .re$dt_res_lrt <<- dt_all_results(.r$res_lrt)
-  # })
-  
   dt_res = reactive({
     req(res())
-    cat("Updating dt_res...\n")
-    dt_all_results(res())
+    cat("Updating data.table for DESeq2 results...\n")
+    dt_all_results(res()) |> set_to_export("dt_res")
   })
   
+  # Save the result data.table to cache when the filter is updated
   observe({
-    req(dt_res())
-    write_cache(dt_res, "dt_res", c(cache_identity("included"), read_cache("samples")))
-    .re$dt_res <<- dt_res()
+    req(dds_identity())
+    write_cache(dt_res, "dt_res", dds_identity())
   })
   
-  # observe({
-  #   req(.r$res)
-  #   cat("Updating dt_res_all...\n")
-  #   .re$dt_res <<- dt_all_results(.r$res)
-  # })
+  # Significant features, responding to filter and α input changes
+  dt_sig = reactive({
+    req(dt_res(), a())
+    cat("Updating data.table for significant features...\n")
+    get_dt_sig(dt_res(), a())
+  })
   
-  # observe({
-  #   # if(only_sig()){
-  #   #   req(.re$dt_res_lrt)
-  #   #   cat("Updating dt_res with dt_res_lrt...\n")
-  #   #   .r$dt_res = .re$dt_res_lrt 
-  #   # }
-  #   # else{
-  #     req(.re$dt_res_all)
-  #     cat("Updating dt_res with dt_res_all...\n")
-  #     .r$dt_res = .re$dt_res_all 
-  #   # }
-  # })
+  dt_lrt_sig = reactive({
+    req(dds(), lrt_a())
+    cat("Updating data.table for LRT-significant features...\n")
+    get_dt_lrt(dds(), lrt_a())
+  })
+  
+  # Subset of DESeqDataSet for LRT-significant features, used for PCA
+  dds_lrt_sig = reactive({
+    req(dds(), dt_lrt_sig())
+    cat("Subsetting DESeqDataSet for LRT-significant features...\n")
+    dds()[dt_lrt_sig()$feature_id, ]
+  })
   
   # PCA
   pca_panel_server(dds, dds_lrt_sig)
   
-  # Significant 
-  dt_sig = reactive({
-    req(dt_res(), a())
-    cat("Updating dt_sig...\n")
-    .re$dt_sig <<- get_dt_sig(dt_res(), a())
-    .re$dt_sig
-  })
-  
-  # observe({
-  #   req(.r$dt_res)
-  #   .re$dt_sig <<- get_dt_sig(.r$dt_res, a(), lfc())
-  # }) |> debounce(1000)
   
   selected = sig_server(dt_sig, dt_lrt_sig)
   
@@ -194,11 +132,12 @@ server = function(input, output, session){
    
   volcano_ma_server(a, lfc, selected)
   
-  # clusterProfiler
-  dt_go = reactive({
-    if(go_pred()) read_cache("outliers")
-    else dt_sig()
+  outliers = reactive({
+    req(.chache_time$outliers)
+    read_cache("outliers")
   })
-  gsea_server(dt_go, .re$genes, read_cache("dt_res"))
   
+  # clusterProfiler
+  dt_go = reactive(if(go_pred()) outliers else dt_sig)
+  gsea_server(dt_go(), genes)
 }

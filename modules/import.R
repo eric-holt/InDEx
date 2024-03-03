@@ -200,7 +200,11 @@ import_server = function(id = "import"){
     fc = reactive(input$file_counts)
     ft = reactive(input$file_tpm)
     
-    observe(queue_project_load(pr())) |> bindEvent(pr())
+    # When project is changed, load the project
+    observe({
+      req(!project_being_loaded(), pr() != .project)
+      queue_project_load(pr())
+    }) |> bindEvent(pr())
 
     # Create
     observe({

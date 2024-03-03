@@ -41,7 +41,7 @@ add_positions = function(dt){
 
 # Make all project directories
 make_all_dir = function(project = .project){
-  for(dir in list(.dir_cache, .dir_cache_identity, .dir_export_gg, .dir_export_pl, .dir_export_re, .dir_import)){
+  for(dir in list(.dir_cache, .dir_cache_identity, .dir_export_gg, .dir_export_pl, .dir_export_data, .dir_import)){
     dir.create(dir(project), recursive = T, showWarnings = F)
   }
 }

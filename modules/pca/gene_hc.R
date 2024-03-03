@@ -23,18 +23,14 @@ hc_server = function(dds_sig, id = "hc") {
     
     output$count = renderPlotly({
       store_plots(suppressWarnings(lrt_hc_count(dds_sig())), "LRT_hclust_count")
-      .pl[["LRT_hclust_count"]]
     })
     
     output$norm = renderPlotly({
       store_plots(suppressWarnings(lrt_hc_norm(dds_sig())), "LRT_hclust_norm")
-      .pl[["LRT_hclust_norm"]]
     })
     
     output$tpm = renderPlotly({
       store_plots(suppressWarnings(lrt_hc_tpm(dds_sig())), "LRT_hclust_TPM")
-      .pl[["LRT_hclust_TPM"]]
     })
   })
 }
-

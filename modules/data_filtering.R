@@ -106,8 +106,8 @@ data_server = function(id = "data") {
     # Feature filters
     # by count/TPM
     filtered = reactive({
-      req(.g$dt_count, !project_being_loaded(), mc(), mn(), mt(), cr(), cn(), ct())
-      f = filter_by_count(.g$dt_count, mc()) |>
+      req(.dt_count, !project_being_loaded(), mc(), mn(), mt(), cr(), cn(), ct())
+      f = filter_by_count(.dt_count, mc()) |>
         intersect(filter_by_count(.dt_norm, mn())) |>
         intersect(filter_by_cv(.dt_rlog, cr())) |>
         intersect(filter_by_cv(.dt_norm, cn()))
@@ -119,41 +119,62 @@ data_server = function(id = "data") {
       f
     })
     
-    # by gene type
-    included = reactive({
+    # by gene type; the final subset of features
+    included_ = reactive({
       req(filtered(), !project_being_loaded(), gt())
       exclude_gene(filtered(), gt())
     })
     
-    observe({
+    # Filtered features' gene IDs
+    genes_ = reactive({
       req(included(), !project_being_loaded())
-      write_cache(included, "included", c(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt()))
+      feature_to_gene(included())
     })
     
+    # Cache----
+    dds_identity = reactive({
+      req(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
+      c(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
+    })
+    
+    # Save the included features and genes when the filter inputs change
+    observe({
+      req(dds_identity())
+      write_cache(included_, "included", dds_identity())
+      write_cache(genes_, "genes", dds_identity())
+    })
+
+    # Save the samples when the sample filter inputs change
     observe({
       req(sp(), !project_being_loaded())
-      sp()
-      write_cache(sp, "samples")
+      write_cache(sp, "samples", sp())
+    })
+    
+    # Use the cache for visualization
+    included = reactive({
+      .cache_time$included
+      read_cache("included")
+    })
+    
+    samples = reactive({
+      .cache_time$samples
+      read_cache("samples")
     })
     
     # Count/TPM matrix display
     output$dt_count = renderDT({
-      samples = read_cache("samples")
-      req(.g$dt_count, all(samples %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_count, samples, read_cache("included"), 0)
+      req(!project_being_loaded())
+      dt_display(.dt_count, samples(), included(), 0)
     })
     
     output$dt_norm = renderDT({
-      samples = read_cache("samples")
-      req(.g$dt_norm, all(samples %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_norm, samples, read_cache("included"))
+      req(!project_being_loaded())
+      dt_display(.dt_norm, samples(), included())
     })
     
     output$dt_tpm = renderDT({
-      samples = read_cache("samples")
-      req(.g$dt_tpm, all(samples %in% .samples), !project_being_loaded())
-      dt_display(.g$dt_tpm, samples, read_cache("included"))
+      req(!project_being_loaded())
+      dt_display(.dt_tpm, samples(), included())
     })
-
   })
 }

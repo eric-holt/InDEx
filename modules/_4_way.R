@@ -22,8 +22,15 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     
     if (debugging) debug_server(environment())
     
+    # Cached DESeq2 result
+    dt_res = reactive({
+      .cache_time$dt_res
+      read_cache("dt_res")
+    })
+    
+    # UI
     output$UI = renderUI({
-      if(is.null(read_cache("dt_res"))){
+      if(is.null(dt_res())){
         caution("No data to plot")
       } else{
         tagList(
@@ -49,12 +56,14 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
       }
     })
     
+    # Plot output UI
     output$out = renderUI({
       req(x(), y())
       if(x() == y()) caution("Cannot compare the same contrast")
       else plotlyOutput(ns("plot"), 720, 720)
     })
     
+    # Axis UI
     output$ui_axis = renderUI({
       cat("Rendering the contrast axis UI...\n")
       ui_axis(ns, .g$contrasts)
@@ -80,7 +89,7 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     dt = reactive({
       req(x(), y(), a(), lfc(), x() != y())
       cat(sprintf("Creating the %s vs %s dataset...\n", x(), y()))
-      dt_4way(read_cache("dt_res"), x(), y(), a(), lfc())
+      dt_4way(dt_res(), x(), y(), a(), lfc())
     }) |> debounce(1000)
     
     # Data points outside the prediction interval
@@ -96,7 +105,6 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
       req(dt(), selected(), x(), y(), conf())
       cat("Rendering the 4-way plot...\n")
       store_plots(suppressWarnings(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se())), "_4_way", plotly_4way)
-      .pl[["_4_way"]]
     })
     
     # Outlier DataTable
@@ -142,7 +150,7 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
       DT_out(dt_yx())
     })
     
-    # Selected features
+    # Selected features for emphasizing points in the plot
     selected = reactive({
       req(dt_xy(), dt_yx())
       cat("Updating selected features...\n")
@@ -154,16 +162,15 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     # Output may be used for GO
     out = reactive({
       req(dt_outlier())
-      tryCatch(dt_outlier()[, .(feature_id, gene_id, gene_name, label)], 
-               error = function(e) NULL) 
+      tryCatch({
+        dt_outlier()[, .(feature_id, gene_id, gene_name, label)] |> set_to_export("outliers")
+        }, error = function(e) NULL) 
     })
     
-    
+    # Cache the outliers when inputs change
     observe({
       req(x(), y(), a(), lfc(), conf())
       write_cache(out, "outliers", c(x(), y(), a(), lfc(), conf()))
-      .re$dt_outlier = out()
     })
   })
 }
-

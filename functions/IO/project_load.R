@@ -1,12 +1,11 @@
+# Load a project
 load_project = function(input){
   cat(sprintf("Loading project '%s'...\n", .next_project))
   updateTabsetPanel(inputId = "tbs_main", selected = "Home")
   
-  # Reset all global reactive data values to NULL
-  names(.g) |> lapply(function(name) {.g[[name]] = NULL})
-  names(.r) |> lapply(function(name) {.r[[name]] = NULL})
-  names(.re) |> lapply(function(name) {.re[[name]] = NULL})
-  
+  # Reset all export lists
+  init_export()
+
   # Update project name
   assign_global(.next_project, "project")
   save_current_project()
@@ -16,6 +15,9 @@ load_project = function(input){
   read_project_metadata()
   read_all_data()
   read_input_state()
+  
+  # Reset cache to prevent data from previous project from being used
+  reset_cache()
   
   org.Mm.eg.db |> assign_global("org")
 

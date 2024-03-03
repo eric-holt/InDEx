@@ -29,7 +29,7 @@
   here(.dir_project(project, user), "exported_plotly")
 }
 
-.dir_export_re = function(project = .project, user = .user){
+.dir_export_data = function(project = .project, user = .user){
   here(.dir_project(project, user), "exported_data")
 }
 

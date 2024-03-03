@@ -1,4 +1,10 @@
-# Get ready to load another project
+# React to project name changes
+.project_load_flag = reactiveVal(T) 
+
+# For UI refresh; contains the project name
+.project_load_complete = reactiveVal()
+
+# Set the next project to be loaded
 queue_project_load = function(next_project){
   .next_project <<- next_project
   .project_load_flag(T)
@@ -19,10 +25,9 @@ project_being_loaded = function(){
 }
 
 # For project-specific static data
-# Assign to global variables .name and global reactives g$name
+# Assign to global variables .[name]
 assign_global = function(data, name){
   assign(paste0(".", name), data, envir = .GlobalEnv)
-  .g[[name]] = data
   cat("\tAssigned global variable", name, "\n")
 }
 
@@ -48,4 +53,3 @@ read_all_data =function(){
     invisible()
   }
 }
-
