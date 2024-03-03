@@ -64,7 +64,7 @@ data_server = function(id = "data") {
     
     # Gene count UI responds to filtered()----
     output$ui_gene_count = renderUI({
-      req(filtered(), !project_being_loaded())
+      req(filtered())
       cat("Rendering gene counts...\n")
       filtered_genes = feature_to_gene(filtered())
       num_genes = sapply(1:length(.gene_types), function(i) {
@@ -106,7 +106,7 @@ data_server = function(id = "data") {
     # Feature filters
     # by count/TPM
     filtered = reactive({
-      req(.dt_count, !project_being_loaded(), mc(), mn(), mt(), cr(), cn(), ct())
+      req(mc(), mn(), mt(), cr(), cn(), ct())
       f = filter_by_count(.dt_count, mc()) |>
         intersect(filter_by_count(.dt_norm, mn())) |>
         intersect(filter_by_cv(.dt_rlog, cr())) |>
@@ -121,32 +121,32 @@ data_server = function(id = "data") {
     
     # by gene type; the final subset of features
     included_ = reactive({
-      req(filtered(), !project_being_loaded(), gt())
+      req(filtered(), gt())
       exclude_gene(filtered(), gt())
     })
     
     # Filtered features' gene IDs
     genes_ = reactive({
-      req(included(), !project_being_loaded())
+      req(included())
       feature_to_gene(included())
     })
     
     # Cache----
-    dds_identity = reactive({
-      req(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
-      c(sp(), mc(), mn(), mt(), cr(), cn(), ct(), gt())
+    feature_identity = reactive({
+      req(mc(), mn(), mt(), cr(), cn(), ct(), gt())
+      c(mc(), mn(), mt(), cr(), cn(), ct(), gt())
     })
     
     # Save the included features and genes when the filter inputs change
     observe({
-      req(dds_identity())
-      write_cache(included_, "included", dds_identity())
-      write_cache(genes_, "genes", dds_identity())
+      req(feature_identity())
+      write_cache(included_, "included", feature_identity())
+      write_cache(genes_, "genes", feature_identity())
     })
 
     # Save the samples when the sample filter inputs change
     observe({
-      req(sp(), !project_being_loaded())
+      req(sp())
       write_cache(sp, "samples", sp())
     })
     
@@ -163,17 +163,14 @@ data_server = function(id = "data") {
     
     # Count/TPM matrix display
     output$dt_count = renderDT({
-      req(!project_being_loaded())
       dt_display(.dt_count, samples(), included(), 0)
     })
     
     output$dt_norm = renderDT({
-      req(!project_being_loaded())
       dt_display(.dt_norm, samples(), included())
     })
     
     output$dt_tpm = renderDT({
-      req(!project_being_loaded())
       dt_display(.dt_tpm, samples(), included())
     })
   })

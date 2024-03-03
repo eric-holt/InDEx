@@ -69,7 +69,7 @@ gsea_server = function(dt_enrich, genes, id = "gsea") {
     # Data identity
     data_identity = reactive({
       req(dt_res())
-      dt_res()[, .(baseMean, pvalue, padj, log2FoldChange)] |> na.omit() |> colSums() |> unname()
+      dt_res()[, .(baseMean, pvalue, padj, log2FoldChange)] |> na.omit() |> colSums() |> unname() |> c(cache_identity("outliers"))
     })
     
     # Indicator for data change, must respond to data_identity and cache time changes

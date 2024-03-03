@@ -2,29 +2,30 @@
 # a.: axis, representing a contrast like "HH_HC"
 
 # plot
-gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
+gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se, metric){
   az = third_contrast(ax, ay)
   
   # Assign types
   types = contrasts_to_4way_labels(ax, ay, az)
   dt[, type := types[4]]
-  dt[(x >= lfc | x <= -lfc) & px < a, type := types[1]]
-  dt[(y >= lfc | y <= -lfc) & py < a, type := types[2]]
-  dt[(z >= lfc | z <= -lfc) & pz < a, type := types[3]]
-  dt[, type := factor(type, levels = unique(types))]
+  dt[x_padj < a, type := types[1]]
+  dt[y_padj < a, type := types[2]]
+  dt[z_padj < a, type := types[3]]
+  dt[, type := factor(type, levels = types)]
   
   # Mark selected features
   dt[, selected := feature_id %in% features]
   
-  # Set contrast colors
+  # Set contrast colors defined upon project load
   colors = c(.cont_colors[ax],
              .cont_colors[ay],
              .cont_colors[az],
              "gray20") |> setNames(types)
   
-  # Prediction interval
-  model = lm(y ~ x, dt)
-  dt_model = data.table(x = seq(min(dt$x), max(dt$x), length.out = 100))
+  # Linear model with confidence and prediction intervals
+  d = dt[, .(x, y)] |> na.omit()
+  model = lm(y ~ x, d)
+  dt_model = data.table(x = seq(min(d$x), max(d$x), length.out = 100))
   fit = predict(model, newdata = dt_model)
   conf = predict(model, newdata = dt_model, interval = "confidence", level = level)
   pred = predict(model, newdata = dt_model, interval = "prediction", level = level)
@@ -34,42 +35,33 @@ gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
                   pred_u = pred[, "upr"],
                   pred_l = pred[, "lwr"])]
   
-  # Regions of interest (usual matrix id order)
-  # r = c("similar", "different", "opposite")
-  # rect_colors = c("#aaff00", "#aa80ff", "#5500ff")
-  # names(rect_colors) = r
-  # dt_region = data.table(xmin = rep(c(-Inf, -lfc, lfc), each = 3),
-  #                        xmax = rep(c(-lfc, lfc, Inf), each = 3),
-  #                        ymin = rep(c(lfc, -lfc, -Inf), 3),
-  #                        ymax = rep(c(Inf, lfc, -lfc), 3),
-  #                        region = c(r[3], r[2], r[1], r[2], r[1], r[2], r[1], r[2], r[3]))
-  
-  
   # Correlation
   ct = cor.test(dt$x, dt$y)
+  
   # Plot
-  plt = dt |> 
+  p = dt |> 
     ggplot(aes(x, y, color = type,
                text = sprintf("%s\npadj (%s): %.2e\npadj (%s): %.2e\npadj (%s): %.2e",
                               gene_name, 
-                              ax, signif(px, 3), 
-                              ay, signif(py, 3),
-                              az, signif(pz, 3))))
-  # Draw regions
-  # plt = plt + geom_rect(data = dt_region, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = region), alpha = 1/3, inherit.aes = F) +
-  # scale_fill_manual(values = rect_colors) +
+                              ax, signif(x_padj, 3), 
+                              ay, signif(y_padj, 3),
+                              az, signif(z_padj, 3))))
+
+  if (metric == "lfc"){
+    p = p +
+      geom_vline(xintercept = lfc, color = "gray25", linewidth = .1) +
+      geom_vline(xintercept = -lfc, color = "gray25", linewidth = .1) +
+      geom_hline(yintercept = lfc, color = "gray25", linewidth = .1) +
+      geom_hline(yintercept = -lfc, color = "gray25", linewidth = .1)
+  }
   
-  plt = plt +
-    geom_vline(xintercept = lfc, color = "gray25", linewidth = .1) +
-    geom_vline(xintercept = -lfc, color = "gray25", linewidth = .1) +
-    geom_hline(yintercept = lfc, color = "gray25", linewidth = .1) +
-    geom_hline(yintercept = -lfc, color = "gray25", linewidth = .1) +
+  p = p +
     geom_vline(xintercept = 0, linewidth = .1) +
     geom_hline(yintercept = 0, linewidth = .1)
   
   # Show intervals
   if(show_int){
-    plt = plt +
+    p = p +
       geom_ribbon(aes(ymin = pred_l, ymax = pred_u, color = NULL, text = paste0(level * 100, "% prediction interval")), data = dt_model, fill = "green", alpha = .2) +
       geom_ribbon(aes(ymin = conf_l, ymax = conf_u, color = NULL, text = paste0(level * 100, "% confidence interval")), data = dt_model, fill = "blue", alpha = .2) +
       geom_line(aes(color = NULL, text = paste0("R = ", signif(ct$estimate, 3), " (p = ", signif(ct$p.value, 3), ")")), data = dt_model, linewidth = .2)
@@ -77,24 +69,28 @@ gg_4way = function(dt, ax, ay, a, lfc, features, level, show_int, show_se){
   
   # Show standard errors  
   if(show_se){
-    plt = plt +
+    p = p +
       geom_errorbar(aes(ymin = y - y_se, ymax = y + y_se), linewidth = .1) +
       geom_errorbarh(aes(xmin = x - x_se, xmax = x + x_se), linewidth = .1)
   }
   
-  plt = plt +
+  p = p +
     geom_point(data = dt[type == types[4] & selected == F], alpha = .25) +
     geom_point(data = dt[type %in% types[1:3] & selected == F], alpha = .75) +
     geom_point(data = dt[selected == T], size = 4, alpha = .9) +
     coord_fixed() +
     scale_color_manual(values = colors) +
-    labs(x = paste(to_slash(ax), "log2 fold change"), 
-         y = paste(to_slash(ay), "log2 fold change"), 
-         alpha = "", color = "", size = "") +
-    guides(size = "none", nrow = 2) +
+    guides(size = "none", nrow = 2)+
+    labs(alpha = "", color = "", size = "") +
     theme(legend.position = "top",
           legend.box = "horizontal")
-  plt
+  
+  label_suffix = if (metric == "LFC") "log2 fold change" else "−log10(p) × sign(LFC)"
+  
+  p = p +
+    labs(x = paste(to_slash(ax), label_suffix),
+         y = paste(to_slash(ay), label_suffix))
+  p
 }
 
 plotly_4way = function(gg){

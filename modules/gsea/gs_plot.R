@@ -25,7 +25,7 @@ gs_plot_server = function(dt, id) {
       req(dt())
       cat("Rendering", id, "dot plot...\n")
       plot_id = str_split_1(ns(id), "-")[2:3] |> paste(collapse = "_")
-      store_plots(suppressWarnings(gg_dotplot(dt())), plot_id, plotly_dotplot)
+      store_plots(gg_dotplot(dt()), plot_id, plotly_dotplot) |> suppressWarnings()
     })
     
     output$DT = renderDT({
