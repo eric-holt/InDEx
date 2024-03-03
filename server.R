@@ -75,7 +75,7 @@ server = function(input, output, session){
     .cache_time$genes
     read_cache("genes")
   })
-  
+ 
   # DESeq2 chain to update the result data.table
   dds = reactive({
     req(included(), samples())
@@ -123,7 +123,6 @@ server = function(input, output, session){
   
   # PCA
   pca_panel_server(dds, dds_lrt_sig)
-  
   
   selected = sig_server(dt_sig, dt_lrt_sig)
   

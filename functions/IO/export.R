@@ -1,3 +1,4 @@
+
 # Lists to store ggplot, plotly and data objects for export
 .export_gg_list = list()
 .export_plotly_list = list()
@@ -36,6 +37,7 @@ set_to_export = function(data, id){
 export_gg = function(id){
   if(check_path(.dir_export_gg())){
     saveRDS(.export_gg_list[[id]], here(.dir_export_gg(), paste0(id, ".rds")))
+
     cat(sprintf("Exported ggplot '%s'\n", id))
   }
 }

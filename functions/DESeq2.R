@@ -60,6 +60,5 @@ get_dt_lrt = function(dds, alpha){
 get_dt_sig = function(dt_res, alpha){
   tryCatch({
     dt_res[padj < alpha]
-    # dt_res[padj < alpha & abs(log2FoldChange) >= lfc]
   }, error = function(e) NULL)
 }

@@ -83,7 +83,7 @@ gsea_server = function(dt_enrich, genes, id = "gsea") {
         span("Data not changed", icon("check"), style = "color: green;")
       }
     })
-    
+
     # GO term enrichment result 
     enrich_go_ = reactive({
       req(dt_enrich())
