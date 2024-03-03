@@ -20,6 +20,7 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
     # Combine Wald and LRT results
     dt = reactive({
       req(!no_data())
+      
       rbind(dt_sig(), dt_lrt_sig()) |> set_to_export("dt_sig")
     })
     

@@ -16,7 +16,7 @@ ui = fixedPage(
                column(4,
                       actionButton("btn_export", HTML(" Export"), icon("file-export"))),
                column(8,
-                      checkboxGroupInput("cbg_export", NULL, c("data", "ggplot", "plotly"), c("data", "ggplot", "plotly"), T))
+                      checkboxGroupInput("cbg_export", NULL, c("data", "ggplot", "plotly"), c("data"), T))
                )
            )
     ),

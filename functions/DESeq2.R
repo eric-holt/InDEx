@@ -20,7 +20,9 @@ dt_result = function(res){
     dt[, feature_id := rownames(res)]
     dt = unique(.dt_count[, .(feature_id, gene_id, gene_name)])[dt, on = "feature_id"]
     setorder(dt, pvalue)
-    dt
+    
+    # Remove NA pvalues, but keep NA padj; could still be useful for GSEA
+    dt[!is.na(pvalue)]
   }, error = function(e) {
     warning("dt_result: ", e)
     NULL
@@ -47,7 +49,7 @@ dt_all_results = function(res){
 get_dt_lrt = function(dds, alpha){
   tryCatch({
     dds_lrt = nbinomLRT(dds, reduced = ~ 1)
-    dt_lrt = results(dds_lrt) %>% na.omit %>% dt_result
+    dt_lrt = results(dds_lrt) %>% dt_result
     dt_lrt[, label := "LRT"]
     dt_lrt[padj < alpha]
   }, error = function(e) {

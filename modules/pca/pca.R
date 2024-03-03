@@ -41,7 +41,7 @@ pca_server = function(dds_pca, id = "pca") {
     # Cache PCA result upon data change
     observe({
       req(pca_identity())
-      write_cache(pca, ns("pca"), pca_identity())
+      write_cache(pca_, ns("pca"), pca_identity())
     })
     
     # Use cached PCA result for visualization
@@ -59,19 +59,19 @@ pca_server = function(dds_pca, id = "pca") {
     # PCA plot
     output$scat = renderPlotly({
       cat("Rendering PCA plot...\n")
-      store_plots(suppressWarnings(gg_pca(pca())), paste0(id, "_scat"), plotly_pca)
+      store_plots(gg_pca(pca()), paste0(id, "_scat"), plotly_pca) |> suppressWarnings()
     })
     
     # All-PC plot
     output$all_pc = renderPlotly({
       cat("Rendering all-PC plot...\n")
-      store_plots(suppressWarnings(gg_all_pc(pca())), paste0(id, "_all_pc"), plotly_all_pc)
+      store_plots(gg_all_pc(pca()), paste0(id, "_all_pc"), plotly_all_pc) |> suppressWarnings()
     })
     
     # PCA hierarchical clustering heatmap
     output$hc_heatmap = renderPlotly({
       cat("Rendering PCA HC heatmap...\n")
-      store_plots(suppressWarnings(pca_hc_heatmap(pca())), paste0(id, "_hc_heatmap"))
+      store_plots(pca_hc_heatmap(pca()), paste0(id, "_hc_heatmap")) |> suppressWarnings()
     })
   })
 }

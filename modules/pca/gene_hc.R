@@ -22,15 +22,15 @@ hc_server = function(dds_sig, id = "hc") {
     if (debugging) debug_server(environment())
     
     output$count = renderPlotly({
-      store_plots(suppressWarnings(lrt_hc_count(dds_sig())), "LRT_hclust_count")
+      store_plots(lrt_hc_count(dds_sig()), "LRT_hclust_count") |> suppressWarnings()
     })
     
     output$norm = renderPlotly({
-      store_plots(suppressWarnings(lrt_hc_norm(dds_sig())), "LRT_hclust_norm")
+      store_plots(lrt_hc_norm(dds_sig()), "LRT_hclust_norm") |> suppressWarnings()
     })
     
     output$tpm = renderPlotly({
-      store_plots(suppressWarnings(lrt_hc_tpm(dds_sig())), "LRT_hclust_TPM")
+      store_plots(lrt_hc_tpm(dds_sig()), "LRT_hclust_TPM") |> suppressWarnings()
     })
   })
 }

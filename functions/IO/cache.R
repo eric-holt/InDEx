@@ -58,7 +58,6 @@ add_all_cache = function(){
 
 # Read cached data if the file has been updated since the last time it was read
 read_cache = function(name){
-  req(!project_being_loaded())
   # Create the cache object if it doesn't exist
   add_cache(name)
   
@@ -70,8 +69,12 @@ read_cache = function(name){
     time = file.mtime(path)
     if (time > .cache_time[[name]]){
       data = readRDS(path)
-      id_data = readRDS(id_path)
       .cache[[name]]$data <<- data
+      if(!file.exists(id_path)){
+        id_data = NULL
+      } else {
+        id_data = readRDS(id_path)
+      }
       .cache[[name]]$id_data <<- id_data
       isolate(set_cache_time(name, time))
       cat(sprintf("Loaded cache file '%s'\n", name))

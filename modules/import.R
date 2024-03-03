@@ -202,9 +202,9 @@ import_server = function(id = "import"){
     
     # When project is changed, load the project
     observe({
-      req(!project_being_loaded(), pr() != .project)
+      req(pr() != .project)
       queue_project_load(pr())
-    }) |> bindEvent(pr())
+    })
 
     # Create
     observe({

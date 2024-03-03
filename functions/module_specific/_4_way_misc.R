@@ -11,39 +11,46 @@ third_contrast = function(ax, ay){
 }
 
 # Data for the plot
-dt_4way = function(dt, ax, ay, a, lfc){
+dt_4way = function(dt, ax, ay, a, lfc, metric){
+  # Third contrast that is not compared
   az = third_contrast(ax, ay)
-  d = dt |> 
-    dplyr::rename(lfc = log2FoldChange, p = padj) |>
-    dcast(feature_id + gene_id + gene_name ~ label, value.var = c("p", "lfc", "lfcSE"))
-  d[, x := get(paste0("lfc_", ax))]
-  d[, y := get(paste0("lfc_", ay))]
-  d[, z := get(paste0("lfc_", az))]
-  d[, x_se := get(paste0("lfcSE_", ax))]
-  d[, y_se := get(paste0("lfcSE_", ay))]
-  d[, z_se := get(paste0("lfcSE_", az))]
-  d[, px := get(paste0("p_", ax))]
-  d[, py := get(paste0("p_", ay))]
-  d[, pz := get(paste0("p_", az))]
-  d[, .(feature_id, gene_id, gene_name, x, y, z, x_se, y_se, z_se, px, py, pz)]
+  
+  dt = copy(dt)
+  setnames(dt, c("log2FoldChange", "pvalue"), c("lfc", "p"))
+  
+  # Change column names based on the metric
+  dt[, value := if (metric == "LFC") lfc else -log10(p) * sign(lfc)]
+  
+  vars = if (metric == "LFC") c("value", "lfcSE", "padj") else c("value", "padj")
+
+  d = dt |>
+    dcast(feature_id + gene_id + gene_name ~ label, value.var = vars)
+
+  c("x", "y", "z") |> lapply(function(v){
+    av = get(paste0("a", v))
+    old = paste0(c("value_", "lfcSE_", "padj_"), av)
+    new = paste0(v, c("", "_se", "_padj"))
+    setnames(d, old, new, skip_absent = T)
+  })
+  d
 }
 
 # Prediction outliers
 pred_outliers = function(dt, ax, ay, level){
+  d = dt[, .(x, y, gene_id, gene_name, feature_id)] |> na.omit()
   model = lm(y ~ x, dt)
   pred = predict(model, interval = "prediction", level = level)
-  dt[, `:=`(l = pred[, "lwr"], u = pred[, "upr"])]
-  dt = dt[y < l | y > u]
+  d[, `:=`(l = pred[, "lwr"], u = pred[, "upr"])]
+  d = d[y < l | y > u]
   labels = c(paste0(ax, ">", ay), paste0(ay, ">", ax))
-  dt[y - y_se < l, label := labels[1]]
-  dt[y + y_se > u, label := labels[2]]
-  dt[, label := factor(label, levels = unique(labels))]
-  dt
+  d[y < l, label := labels[1]]
+  d[y > u, label := labels[2]]
+  d[, label := factor(label, levels = unique(labels))]
+  d
 }
 
 contrasts_to_4way_labels = function(...){
-  list(...) |> sapply(function(contrast){
-    # pair = contrast_to_conditions(contrast)
+  types = list(...) |> sapply(function(contrast){
     sprintf("%s significant", to_slash(contrast))
   }) |> c("not significant")
 }

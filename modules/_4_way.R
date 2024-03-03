@@ -47,7 +47,7 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
                        column(4,
                               checkboxInput(ns("chk_lf_se"), "Show LFC standard errors")),
                        column(4,
-                              radioButtons(ns("rbn_p_lfc"), "Metric", c("Signed log(p)", "LFC"), "signed log(p)"))
+                              radioButtons(ns("rbn_p_lfc"), "Metric", c("Signed log(p)", "LFC"), "Signed log(p)"))
                      )),
                    uiOutput(ns("out"))),
             column(4,
@@ -66,7 +66,8 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     # Axis UI
     output$ui_axis = renderUI({
       cat("Rendering the contrast axis UI...\n")
-      ui_axis(ns, .g$contrasts)
+      .project_load_complete()
+      ui_axis(ns, .contrasts)
     })
     
     # Inputs
@@ -85,11 +86,21 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     show_se = reactive(input$chk_lf_se)
     observe_input(ns("chk_lf_se"), show_se)
     
+    metric = reactive(input$rbn_p_lfc)
+    observe_input(ns("rbn_p_lfc"), metric)
+    
+    # Disable the LFC standard errors when the metric is not LFC
+    observe({
+      req(metric())
+      if(metric() == "LFC") enable("chk_lf_se")
+      else disable("chk_lf_se")
+    })
+    
     # 4-way plot (x vs y) dataset
     dt = reactive({
-      req(x(), y(), a(), lfc(), x() != y())
+      req(x(), y(), a(), lfc(), x() != y(), metric())
       cat(sprintf("Creating the %s vs %s dataset...\n", x(), y()))
-      dt_4way(dt_res(), x(), y(), a(), lfc())
+      dt_4way(dt_res(), x(), y(), a(), lfc(), metric()) |> set_to_export("dt_4way")
     }) |> debounce(1000)
     
     # Data points outside the prediction interval
@@ -100,11 +111,11 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
       ol
     })
 
-    # Plot
+    # Plot; isolate the reactive values used for data generation to avoid double rendering
     output$plot = renderPlotly({
       req(dt(), selected(), x(), y(), conf())
       cat("Rendering the 4-way plot...\n")
-      store_plots(suppressWarnings(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se())), "_4_way", plotly_4way)
+      store_plots(gg_4way(dt(), isolate(x()), isolate(y()), isolate(a()), isolate(lfc()), selected(), conf(), show_int(), show_se(), metric()), "_4way", plotly_4way) |> suppressWarnings()
     })
     
     # Outlier DataTable
