@@ -7,14 +7,14 @@ pca_ui = function(ns = identity, id = "pca"){
   )
 }
 
-pca_server = function(dds_pca, id = "pca") {
+pca_server = function(data, id = "pca") {
   moduleServer(id, function(input, output, session) {
     if (debugging) debug_server(environment())
     ns = session$ns
     
     # UI
     output$UI = renderUI({
-      if(is.null(dds_pca()) || !nrow(dds_pca())){
+      if(is.null(data()) || !nrow(data()$data)){
         caution("No data")
       } else{
         tagList(
@@ -27,51 +27,48 @@ pca_server = function(dds_pca, id = "pca") {
     
     # PCA result list updater
     pca_ = reactive({
-      req(dds_pca())
+      req(data(), data()$data, nrow(data()$data) > 0)
       cat("Computing PCs...\n")
-      get_pca(dds_pca()) |> set_to_export(ns("pca"))
+      get_pca(data()$data) |> set_to_export(ns("pca"))
     })
     
     # Data identity for checking the cache need
     pca_identity = reactive({
-      req(dds_pca())
-      c(nrow(dds_pca()), colnames(dds_pca()))
+      req(data())
+      c(nrow(data()), colnames(data()))
     })
     
     # Cache PCA result upon data change
     observe({
-      req(pca_identity())
-      write_cache(pca_, ns("pca"), pca_identity())
+      # req(data())
+      write_cache(pca_, ns("pca"), data()$identity)
     })
     
     # Use cached PCA result for visualization
-    pca = reactive({
-      req(.cache_time[[ns("pca")]])
-      read_cache(ns("pca"))
-    })
+    pca = cache(ns("pca"))
 
     # Number of PCs for plot scaling
     n = reactive({
       req(pca())
-      length(pca()$explained_var)
+      length(pca()$data$explained_var)
     })
     
     # PCA plot
     output$scat = renderPlotly({
       cat("Rendering PCA plot...\n")
-      store_plots(gg_pca(pca()), paste0(id, "_scat"), plotly_pca) |> suppressWarnings()
+      store_plots(gg_pca(pca()$data), paste0(id, "_scat"), plotly_pca) |> suppressWarnings()
     })
     
     # All-PC plot
     output$all_pc = renderPlotly({
       cat("Rendering all-PC plot...\n")
-      store_plots(gg_all_pc(pca()), paste0(id, "_all_pc"), plotly_all_pc) |> suppressWarnings()
+      store_plots(gg_all_pc(pca()$data), paste0(id, "_all_pc"), plotly_all_pc) |> suppressWarnings()
     })
     
     # PCA hierarchical clustering heatmap
     output$hc_heatmap = renderPlotly({
       cat("Rendering PCA HC heatmap...\n")
-      store_plots(pca_hc_heatmap(pca()), paste0(id, "_hc_heatmap")) |> suppressWarnings()
+      store_plots(pca_hc_heatmap(pca()$data), paste0(id, "_hc_heatmap")) |> suppressWarnings()
     })
   })
 }

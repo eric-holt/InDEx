@@ -139,39 +139,35 @@ data_server = function(id = "data") {
     
     # Save the included features and genes when the filter inputs change
     observe({
-      req(feature_identity())
+      req(feature_identity(), length(included_()) > 0, all(!is.null(feature_identity())))
       write_cache(included_, "included", feature_identity())
       write_cache(genes_, "genes", feature_identity())
     })
 
     # Save the samples when the sample filter inputs change
     observe({
-      req(sp())
+      req(length(sp()) > 0)
       write_cache(sp, "samples", sp())
     })
     
-    # Use the cache for visualization
-    included = reactive({
-      .cache_time$included
-      read_cache("included")
-    })
-    
-    samples = reactive({
-      .cache_time$samples
-      read_cache("samples")
-    })
-    
+    # Use the cache for downstream modules
+    included = cache("included")
+    samples = cache("samples")
+
     # Count/TPM matrix display
     output$dt_count = renderDT({
-      dt_display(.dt_count, samples(), included(), 0)
+      req(samples(), included())
+      dt_display(.dt_count, samples()$data, included()$data, 0)
     })
     
     output$dt_norm = renderDT({
-      dt_display(.dt_norm, samples(), included())
+      req(samples(), included())
+      dt_display(.dt_norm, samples()$data, included()$data)
     })
     
     output$dt_tpm = renderDT({
-      dt_display(.dt_tpm, samples(), included())
+      req(samples(), included())
+      dt_display(.dt_tpm, samples()$data, included()$data)
     })
   })
 }

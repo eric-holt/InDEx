@@ -1,18 +1,28 @@
-gsea_ui = function(ns = identity, id = "gsea"){
+go_ui = function(ns = identity, id = "go"){
   ns = NS(ns(id))
   tagList(
     if (debugging) debug_ui(ns),
+    radioButtons(ns("rbn_data"), "Analyze enrichment in:", c("Significant features", "Prediction outliers"), "Significant features", inline = T),
     uiOutput(ns("UI"))
   )
 }
 
-gsea_server = function(id = "gsea") {
+go_server = function(id = "go") {
   moduleServer(id, function(input, output, session) {
     ns = session$ns
     if (debugging) debug_server(environment())
     
     # Cached data
-    data = cache("dt_res")
+    data = reactive({
+      req(d())
+      if(d() == "Prediction outliers"){
+        cache("outliers")()
+      } else {
+        cache("dt_sig")()
+      }
+    })
+    
+    genes = cache("genes")
     
     # UI
     output$UI = renderUI({
@@ -23,8 +33,8 @@ gsea_server = function(id = "gsea") {
         fixedRow(column(7, wellPanel(
           fixedRow(
             column(4, 
-                   actionButton(ns("btn_cp"), HTML("Run gseGO()<br>(may take a few minutes)"), icon("rotate-right")),
-                   uiOutput(ns("data_identity"))
+                   actionButton(ns("btn_cp"), HTML("Run enrichGO()<br>(may take a few minutes)"), icon("rotate-right")),
+                   uiOutput(ns("data_identity")),
             ),
             column(4, observedNumericInput(ns("num_minGSSize"), "Min. gene set size", 10, 0)),
             column(4, observedNumericInput(ns("num_maxGSSize"), "Max. gene set size", 500, 0))))),
@@ -36,7 +46,7 @@ gsea_server = function(id = "gsea") {
             column(3, observedRadioButtons(ns("rbn_sort"), "Sort by", c("p-value", "gene count"), "p-value", inline = T)),
             column(3, observedNumericInput(ns("num_pvalueCutoff"), "p-value cutoff", 1, 0, 1)),
             column(3, observedNumericInput(ns("num_qvalueCutoff"), "q-value cutoff", .5, 0, 1)))))),
-        go_panels_ui(ns, "gsea_go")
+        go_panels_ui(ns, "enrich_go")
       )
     })
     
@@ -58,46 +68,51 @@ gsea_server = function(id = "gsea") {
     
     n = reactive(input$num_n)
     observe_input(ns("num_n"), n)
-
-    # GSEA data identity; sort, p, q, n are not part of the data
+    
+    d = reactive(input$rbn_data)
+    observe_input("rbn_data", d)
+    
+    dt_out = cache("outliers")
+    
+    # GO data identity; sort, p, q, n are not part of the data
     identity = reactive({
       req(data(), mings(), maxgs())
-      c(data()$identity, mings(), maxgs())
+      c(data()$identity, mings(), maxgs(), d())
     })
-    
+
     # Indicator for data change, must respond to data_identity and cache time changes
     output$data_identity = renderUI({
       req(identity())
-      if(!identical(identity(), cache_identity("gsea_go")())) {
+      if(!identical(identity(), cache_identity("enrich_go")())) {
         caution("Data changed")
       } else {
         span("Data not changed", icon("check"), style = "color: green;")
       }
     })
     
-    # GSEA result with GO terms
-    gsea_go_ = reactive({
-      req(data())
+    # GO term enrichment result 
+    enrich_go_ = reactive({
+      req(data(), genes())
       if(nrow(data()$data)){
-        cat("Computing GO GSEA...\n")
-        get_all_gsea(data()$data, 1, mings(), maxgs())
+        cat("Computing GO enrichment...\n")
+        get_enrich_go(data()$data, genes()$data, 1, 1, mings(), maxgs())
       } else {
         NULL
       }
     })
-    
+
     # Cache the results upon button click
     observe({
       # req(identity())
-      write_cache(gsea_go_, "gsea_go", identity())$data |> set_to_export("gsea_go")
+      write_cache(enrich_go_, "enrich_go", identity())$data |> set_to_export("enrich_go")
     }) |> bindEvent(input$btn_cp)
     
     # Use the cache for visualization
-    gsea_go = cache("gsea_go")
+    enrich_go = cache("enrich_go")
     
-    # Update the GSEA panel; give the reactives
-    go_panels_server(gsea_go, p, q, n, sort, "gsea_go")
-    
+    # Update the GO panel; give the reactives
+    go_panels_server(enrich_go, p, q, n, sort, "enrich_go")
+
     # Reset inputs upon button click
     observe({
       updateNumericInput(inputId = "num_n", value = 10)

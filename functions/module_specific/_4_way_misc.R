@@ -37,7 +37,8 @@ dt_4way = function(dt, ax, ay, a, lfc, metric){
 
 # Prediction outliers
 pred_outliers = function(dt, ax, ay, level){
-  d = dt[, .(x, y, gene_id, gene_name, feature_id)] |> na.omit()
+  d = dt[, .(x, y, gene_id, gene_name, feature_id)]
+  d = d[complete.cases(d)]
   model = lm(y ~ x, dt)
   pred = predict(model, interval = "prediction", level = level)
   d[, `:=`(l = pred[, "lwr"], u = pred[, "upr"])]

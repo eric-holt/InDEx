@@ -11,11 +11,18 @@ go_panels_server = function(data, p, q, n, sort, id = "go_panels") {
     ns = session$ns
     if (debugging) debug_server(environment())
     
+    # Shorthand for data
+    d = reactive({
+      req(data())
+      data()$data
+    })
+    
     # UI
     ui_go_panels = function(){
-      if(is.null(data())) return(caution("No data has been cached"))
+      if(is.null(data()) || is.null(d()))
+        return(caution("No data has been cached"))
       ui_ont = function(ont){
-        names(data()) |> lapply(function(l){
+        names(d()) |> lapply(function(l){
           tabPanel(l, gs_plot_ui(ns, paste(l, ont, sep = "_")))
         }) %>% do.call(tabsetPanel, .)
       }
@@ -31,10 +38,10 @@ go_panels_server = function(data, p, q, n, sort, id = "go_panels") {
     
     # Data for plots including top n terms
     dt_top_n = reactive({
-      req(data(), n(), sort(), p(), q())
-      names(data()) |> lapply(function(l){
-        names(data()[[l]]) |> lapply(function(ont){
-          dt = get_dt_top_n_go(data()[[l]][[ont]], n(), sort(), p(), q())
+      req(d(), n(), sort(), p(), q())
+      names(d()) |> lapply(function(l){
+        names(d()[[l]]) |> lapply(function(ont){
+          dt = get_dt_top_n_go(d()[[l]][[ont]], n(), sort(), p(), q())
           if(is.null(dt)) return()
           dt[, `:=`(label = l, ontology = ont)]
         }) %>% rbindlist

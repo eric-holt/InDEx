@@ -31,7 +31,7 @@ ui = fixedPage(
                column(2,
                       observedNumericInput("num_lfc", "Log2FC", .5, 0, 2)),
                column(6,
-                      observedCheckboxInput("chk_go_pred", "Enrichment with prediction outliers", F))
+                      actionButton("btn_clr_cache", "Clear cache", icon("refresh")))
                ),
               observedCheckboxInput("chk_same_as_wald", "Use same α for LRT", T)
              )
@@ -44,6 +44,7 @@ ui = fixedPage(
               tabPanel("Significant", sig_ui()),
               tabPanel("4-way", four_way_ui()),
               tabPanel("Volcano/MA/p", volcano_ma_ui()),
-              tabPanel("Functional", gsea_ui())
+              tabPanel("GO", go_ui()),
+              tabPanel("GSEA", gsea_ui())
   )
 )

@@ -22,12 +22,17 @@ server = function(input, output, session){
       )
     }) |> bindEvent(.project_load_flag())
     
-    # Export reactive objects
+    # Export reactive objects upon button click
     observe({
       if("data" %in% input$cbg_export) export_all_data()
       if("ggplot" %in% input$cbg_export) export_all_gg()
       if("plotly" %in% input$cbg_export) export_all_pl()
     }) |> bindEvent(input$btn_export) |> throttle(5000)
+    
+    # Clear cache upon button click
+    observe({
+      clear_all_cache()
+    }) |> bindEvent(input$btn_clr_cache)
     
     # Inputs
     a = reactive(as.numeric(input$num_alpha))
@@ -38,9 +43,6 @@ server = function(input, output, session){
     
     lfc = reactive(as.numeric(input$num_lfc))
     observe_input("num_lfc", lfc)
-    
-    go_pred = reactive(input$chk_go_pred)
-    observe_input("chk_go_pred", go_pred)
     
     # Set LRT α to the same value as Wald
     observe({
@@ -57,34 +59,17 @@ server = function(input, output, session){
         enable("num_lrt_alpha")
       }
     })
-    
-    # Home
-    home_server()
-    
-    # Data filtering
-    data_server()
-    
-    # Read cache when the cache time is updated
-    included = reactive({
-      .cache_time$included
-      read_cache("included")
-    })
-    
-    samples = reactive({
-      .cache_time$samples
-      read_cache("samples")
-    })
-    
-    genes = reactive({
-      .cache_time$genes
-      read_cache("genes")
-    })
+
+    # Data processing chain----
+    # Cached data from data filtering
+    included = cache("included")
+    samples = cache("samples")
     
     # DESeq2 chain to update the result data.table
     dds = reactive({
-      req(included(), samples())
+      req(included(), samples(), included()$data, samples()$data, length(included()$data) > 0, length(samples()$data) > 0)
       cat("Subsetting DESeqDataSet...\n")
-      .dds[included(), samples()]
+      .dds[included()$data, samples()$data]
     })
     
     res = reactive({
@@ -93,7 +78,7 @@ server = function(input, output, session){
       get_res(dds())
     })
     
-    dt_res = reactive({
+    dt_res_ = reactive({
       req(res())
       cat("Updating data.table for DESeq2 results...\n")
       dt_all_results(res()) |> set_to_export("dt_res")
@@ -101,22 +86,48 @@ server = function(input, output, session){
     
     # Save the result data.table to cache when the filter is updated
     observe({
-      req(included(), samples(), res())
-      write_cache(dt_res, "dt_res", dds_identity())
+      req(included())
+      write_cache(dt_res_, "dt_res", c(included()$identity, samples()$identity))
     })
+    
+    # Use the cache for the downstream analysis
+    dt_res = cache("dt_res")
     
     # Significant features, responding to filter and α input changes
-    dt_sig = reactive({
-      req(dt_res(), a())
-      cat("Updating data.table for significant features...\n")
-      get_dt_sig(dt_res(), a())
-    })
-    
+    # LRT-significant features
     dt_lrt_sig = reactive({
       req(dds(), lrt_a())
       cat("Updating data.table for LRT-significant features...\n")
       get_dt_lrt(dds(), lrt_a())
     })
+    
+    # Wald-significant features
+    dt_sig_ = reactive({
+      req(dt_res(), a())
+      cat("Updating data.table for significant features...\n")
+      sig = get_dt_sig(dt_res()$data, a(), lfc())
+      
+      # Add LRT-significant features if not empty
+      if(!is.null(dt_lrt_sig()) && nrow(dt_lrt_sig())){
+        sig = rbind(sig, dt_lrt_sig())
+      }
+      sig
+    })
+    
+    sig_identity = reactive({
+      req(dt_res(), a(), lfc())
+      id = c(dt_res()$identity, a(), lfc())
+      if(!is.null(dt_lrt_sig()) && nrow(dt_lrt_sig())){
+        c(id, lrt_a())
+      }
+    })
+    
+    # Cache dt_sig when the thresholds are updated
+    observe({
+      # req(sig_identity())
+      write_cache(dt_sig_, "dt_sig", sig_identity())$data |> set_to_export("dt_sig")
+    })
+ 
     
     # Subset of DESeqDataSet for LRT-significant features, used for PCA
     dds_lrt_sig = reactive({
@@ -126,22 +137,27 @@ server = function(input, output, session){
     })
     
     # PCA
-    pca_panel_server(dds, dds_lrt_sig)
-    
-    selected = sig_server(dt_sig, dt_lrt_sig)
-    
-    # Plots
-    four_way_server(a, lfc, selected)
-    
-    volcano_ma_server(a, lfc, selected)
-    
-    outliers = reactive({
-      req(.cache_time$outliers)
-      read_cache("outliers")
+    pca_data_all = reactive({
+      req(dds())
+      list(data = dds(), 
+           identity = c(included()$identity, samples()$identity))
     })
     
-    # clusterProfiler
-    dt_go = reactive(if(go_pred()) outliers else dt_sig)
-    gsea_server(dt_go(), genes)
+    pca_data_lrt = reactive({
+      req(dds_lrt_sig())
+      list(data = dds_lrt_sig(), 
+           identity = c(included()$identity, samples()$identity, lrt_a()))
+    })
+    
+    # Sub modules
+    # NB: Don't try to isolate modules with if(); it will break the reactivity
+    home_server()
+    data_server()
+    pca_panel_server(pca_data_all, pca_data_lrt)
+    selected = sig_server()
+    four_way_server(a, lfc, selected)
+    volcano_ma_server(a, lfc, selected)
+    go_server()
+    gsea_server()
   })
 }
