@@ -7,33 +7,28 @@ sig_ui = function(ns = identity, id = "sig"){
   )
 }
 
-sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
+sig_server = function(id = "sig") {
   moduleServer(id, function(input, output, session) {
     ns = session$ns
     if (debugging) debug_server(environment())
     
-    # Check if the data are provided
-    no_data = reactive({
-      is.null(dt_sig()) || is.null(dt_lrt_sig())
-    })
-
-    # Combine Wald and LRT results
-    dt = reactive({
-      req(!no_data())
-      
-      rbind(dt_sig(), dt_lrt_sig()) |> set_to_export("dt_sig")
+    # Cached data
+    data = cache("dt_sig")
+    d = reactive({
+      req(data())
+      data()$data
     })
     
     # UI
     output$UI = renderUI({
-      if(no_data()){
+      if(is.null(data()) || is.null(d())){
         return(caution("No data"))
-      } else if(nrow(dt()) == 0){
+      } else if(!nrow(d())){
         return(caution("No significant feature"))
       }
 
-      tabs = unique(dt()$label) |> lapply(function(l){
-        n = nrow(dt()[label == l])
+      tabs = unique(d()$label) |> lapply(function(l){
+        n = nrow(d()[label == l])
         tabPanel(sprintf("%s (%d)", l, n), 
                  DTOutput(ns(l)))
       })
@@ -59,21 +54,21 @@ sig_server = function(dt_sig, dt_lrt_sig, id = "sig") {
 
     # Render each label, responding to the reactive data
     observe({
-      req(dt(), nrow(dt()))
-      unique(dt()$label) |> lapply(function(l){
-        output[[l]] = renderDT(render_sig(dt(), l))
+      req(d(), nrow(d()) > 0)
+      unique(d()$label) |> lapply(function(l){
+        output[[l]] = renderDT(render_sig(d(), l))
       })
     })
 
     # Features selected in the DT tables, used for emphasis in plots
     selected = reactive({
-      req(dt_sig())
-      unique(dt_sig()$label) |> lapply(function(l){
-        dt = dt_sig()[label == l]
+      req(d())
+      unique(d()$label) |> lapply(function(l){
+        dt = d()[label == l]
         idx = input[[paste0(l, "_rows_selected")]]
         dt[idx, feature_id]
       }) %>% unlist %>% unique
-    }) |> debounce(1000)
+    })
     
     return(selected)
   })

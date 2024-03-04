@@ -7,13 +7,13 @@ pca_panel_ui = function(ns = identity, id = "pca_panel"){
   )
 }
 
-pca_panel_server = function(dds_all, dds_lrt, id = "pca_panel") {
+pca_panel_server = function(data_all, data_lrt, id = "pca_panel") {
   moduleServer(id, function(input, output, session) {
     ns = session$ns
     if (debugging) debug_server(environment())
     
     output$UI = renderUI({
-      if(is.null(dds_all()) && is.null(dds_lrt())){
+      if(is.null(data_all()) && is.null(data_lrt())){
         return(caution("No data"))
       }
       tabsetPanel(
@@ -23,8 +23,8 @@ pca_panel_server = function(dds_all, dds_lrt, id = "pca_panel") {
       )
     })
     
-    pca_server(dds_all, "pca_all")
-    pca_server(dds_lrt, "pca_lrt")
-    hc_server(dds_lrt, "hc")
+    pca_server(data_all, "pca_all")
+    pca_server(data_lrt, "pca_lrt")
+    hc_server(data_lrt, "hc")
   })
 }

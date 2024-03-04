@@ -22,10 +22,8 @@ initialize_all_cache_time = function(){
 # Cache object to store the file path, current data, identity data, and last cache time
 new_cache_obj = function(name){
   list(
-    path = cache_file(name),
-    id_path = cache_identity_file(name),
     data = NULL,
-    id_data = NULL
+    identity = NULL
   )
 }
 
@@ -61,8 +59,8 @@ read_cache = function(name){
   # Create the cache object if it doesn't exist
   add_cache(name)
   
-  path = .cache[[name]]$path
-  id_path = .cache[[name]]$id_path
+  path = cache_file(name)
+  id_path = cache_identity_file(name)
   if (!file.exists(path)){
     cat(sprintf("Cache '%s' has not been saved\n", name))
   } else {   # Read the data if the file exists and has been updated
@@ -75,13 +73,13 @@ read_cache = function(name){
       } else {
         id_data = readRDS(id_path)
       }
-      .cache[[name]]$id_data <<- id_data
+      .cache[[name]]$identity <<- id_data
       isolate(set_cache_time(name, time))
       cat(sprintf("Loaded cache file '%s'\n", name))
     }
   }
   # Return the data
-  .cache[[name]]$data
+  .cache[[name]]
 }
 
 # Write data to the cache, updating the cache object
@@ -90,21 +88,21 @@ write_cache = function(data_reactive, name, id_data = data_reactive()){
   add_cache(name)
   
   # Do not write if the identity data is the same as the last time
-  if(identical(id_data, .cache[[name]]$id_data)){
+  if(identical(id_data, .cache[[name]]$identity)){
     cat(sprintf("Identity data for cache '%s' is the same; not writing\n", name))
   } else {
     # If the identity data is different, write it to file and update the cache object
-    path = .cache[[name]]$path
+    path = cache_file(name)
     data = data_reactive()
     saveRDS(data, path)
-    saveRDS(id_data, .cache[[name]]$id_path)
+    saveRDS(id_data, cache_identity_file(name))
     .cache[[name]]$data <<- data
-    .cache[[name]]$id_data <<- id_data
+    .cache[[name]]$identity <<- id_data
     set_cache_time(name, file.mtime(path))
     cat(sprintf("Updated cache file '%s'\n", name))
   }
   
-  .cache[[name]]$data
+  .cache[[name]]
 }
 
 # Clear the cache
@@ -138,20 +136,15 @@ reset_cache = function(){
 
 # Shortcut to get the identity data from the cache
 cache_identity = function(name){
-  if(!name %in% names(.cache)){
-    return(NULL)
-  }
-  .cache[[name]]$id_data
+  reactive({
+    .cache_time[[name]]
+    .cache[[name]]$identity
+  })
 }
 
-# Automatically read or write the cache based on the identity data
-cache = function(data_reactive, name, id_data){
-  data = read_cache(name)
-  # Read the cache if the identity is the same
-  if(identical(id_data, cache_identity(name))){
-  } else {
-    # Otherwise, write the new data to the cache and return it
-    data = write_cache(data_reactive, name, id_data)
-  }
-  data
+# Shortcut to get the cache item as a reactive
+cache = function(name){
+  reactive({
+    read_cache(name)
+  }) |> bindEvent(.cache_time[[name]])
 }

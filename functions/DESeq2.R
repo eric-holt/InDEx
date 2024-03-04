@@ -59,8 +59,8 @@ get_dt_lrt = function(dds, alpha){
 }
 
 # Significant features
-get_dt_sig = function(dt_res, alpha){
+get_dt_sig = function(dt_res, alpha, lfc){
   tryCatch({
-    dt_res[padj < alpha]
+    dt_res[padj < alpha & abs(log2FoldChange) > lfc]
   }, error = function(e) NULL)
 }
