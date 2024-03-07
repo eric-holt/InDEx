@@ -1,4 +1,3 @@
-
 # Lists to store ggplot, plotly and data objects for export
 .export_gg_list = list()
 .export_plotly_list = list()

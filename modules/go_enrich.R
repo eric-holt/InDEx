@@ -2,7 +2,8 @@ go_ui = function(ns = identity, id = "go"){
   ns = NS(ns(id))
   tagList(
     if (debugging) debug_ui(ns),
-    radioButtons(ns("rbn_data"), "Analyze enrichment in:", c("Significant features", "Prediction outliers"), "Significant features", inline = T),
+    wellPanel(
+      radioButtons(ns("rbn_data"), "Analyze enrichment in:", c("Significant features", "Prediction outliers"), "Significant features", inline = T)),
     uiOutput(ns("UI"))
   )
 }
@@ -70,7 +71,7 @@ go_server = function(id = "go") {
     observe_input(ns("num_n"), n)
     
     d = reactive(input$rbn_data)
-    observe_input("rbn_data", d)
+    observe_input(ns("rbn_data"), d)
     
     dt_out = cache("outliers")
     
@@ -79,11 +80,12 @@ go_server = function(id = "go") {
       req(data(), mings(), maxgs())
       c(data()$identity, mings(), maxgs(), d())
     })
-
+    
     # Indicator for data change, must respond to data_identity and cache time changes
     output$data_identity = renderUI({
       req(identity())
-      if(!identical(identity(), cache_identity("enrich_go")())) {
+      .cache_time[["enrich_go"]]
+      if(!identical(identity(), cache_identity("enrich_go"))) {
         caution("Data changed")
       } else {
         span("Data not changed", icon("check"), style = "color: green;")
@@ -100,10 +102,9 @@ go_server = function(id = "go") {
         NULL
       }
     })
-
+    
     # Cache the results upon button click
     observe({
-      # req(identity())
       write_cache(enrich_go_, "enrich_go", identity())$data |> set_to_export("enrich_go")
     }) |> bindEvent(input$btn_cp)
     
@@ -112,7 +113,7 @@ go_server = function(id = "go") {
     
     # Update the GO panel; give the reactives
     go_panels_server(enrich_go, p, q, n, sort, "enrich_go")
-
+    
     # Reset inputs upon button click
     observe({
       updateNumericInput(inputId = "num_n", value = 10)

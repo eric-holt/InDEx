@@ -136,10 +136,7 @@ reset_cache = function(){
 
 # Shortcut to get the identity data from the cache
 cache_identity = function(name){
-  reactive({
-    .cache_time[[name]]
-    .cache[[name]]$identity
-  })
+  .cache[[name]]$identity
 }
 
 # Shortcut to get the cache item as a reactive

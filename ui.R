@@ -1,6 +1,5 @@
 source("preamble.R")
 
-
 ui = fixedPage(
   useShinyjs(),
   tags$head(tags$style(HTML(css))),
@@ -8,35 +7,34 @@ ui = fixedPage(
   
   if (debugging) debug_ui(),
   fixedRow(
-    # column(4, import_ui()),
-    column(4,
+    column(5,
            uiOutput("project_name"),
            wellPanel(
              fixedRow(
                column(4,
-                      actionButton("btn_export", HTML(" Export"), icon("file-export"))),
+                      downloadButton("export", HTML(" Export"), icon = icon("file-export")),
+                      actionButton("btn_clr_cache", "Clear cache", icon("refresh"))),
                column(8,
                       checkboxGroupInput("cbg_export", NULL, c("data", "ggplot", "plotly"), c("data"), T))
-               )
-           )
-    ),
-    column(8,
-           wellPanel(
-             h5(HTML("<center>Project parameters</center>")),
-             fixedRow(
-               column(2,
-                      observedNumericInput("num_alpha", "Wald α", .05, 0, 1)),
-               column(2,
-                      observedNumericInput("num_lrt_alpha", "LRT α", .05, 0, 1)),
-               column(2,
-                      observedNumericInput("num_lfc", "Log2FC", .5, 0, 2)),
-               column(6,
-                      actionButton("btn_clr_cache", "Clear cache", icon("refresh")))
-               ),
-              observedCheckboxInput("chk_same_as_wald", "Use same α for LRT", T)
              )
            )
     ),
+    column(7,
+           wellPanel(
+             h5(HTML("<center>Significance cutoffs</center>")),
+             fixedRow(
+               column(4,
+                      observedNumericInput("num_alpha", HTML("Wald p<sub>adj</sub>"), .05, 0, 1)),
+               column(4,
+                      observedNumericInput("num_lrt_alpha", HTML("LRT p<sub>adj</sub>"), .05, 0, 1),
+                      observedCheckboxInput("chk_same_as_wald", "Same as Wald", T)
+               ),
+               column(4,
+                      observedNumericInput("num_lfc", "Log2FC", .5, 0, 2)),
+             )
+           )
+    )
+  ),
   tabsetPanel(id = "tbs_main",
               tabPanel("Home", home_ui()),
               tabPanel("Filter", data_ui()),
