@@ -22,12 +22,33 @@ server = function(input, output, session){
       )
     }) |> bindEvent(.project_load_flag())
     
-    # Export reactive objects upon button click
-    observe({
-      if("data" %in% input$cbg_export) export_all_data()
-      if("ggplot" %in% input$cbg_export) export_all_gg()
-      if("plotly" %in% input$cbg_export) export_all_pl()
-    }) |> bindEvent(input$btn_export) |> throttle(5000)
+    # Objects to export; use relative path without leading slash for zip
+    files_to_export = reactive({
+      req(input$cbg_export)
+      c(
+        if("data" %in% input$cbg_export) .dir_export_data(),
+        if("ggplot" %in% input$cbg_export) .dir_export_gg(),
+        if("plotly" %in% input$cbg_export) .dir_export_pl(),
+        here(.dir_project(), "input_state.rds"),
+        here(.dir_project(), "metadata.rds")
+      ) |> .relative() |> str_remove("^/")
+    })
+    
+    # Download handler
+    output$export = downloadHandler(
+      filename = function(){
+        sprintf("%s.zip", .project)
+      },
+      content = function(file) {
+        # Save data upon button click
+        if("data" %in% input$cbg_export) export_all_data()
+        if("ggplot" %in% input$cbg_export) export_all_gg()
+        if("plotly" %in% input$cbg_export) export_all_pl()
+        
+        # Zip the exported files
+        system(sprintf("(cd %s && zip -r %s %s)", shQuote(.dir_project()), shQuote(file), paste(shQuote(files_to_export()), collapse = " ")))
+      }
+    )
     
     # Clear cache upon button click
     observe({

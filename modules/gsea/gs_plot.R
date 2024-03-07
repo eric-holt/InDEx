@@ -1,4 +1,4 @@
-gs_plot_ui = function(ns = identity, id = "gse_plot"){
+gs_plot_ui = function(ns = identity, id){
   ns = NS(ns(id))
   tagList(
     if (debugging) debug_ui(ns),
@@ -13,7 +13,7 @@ gs_plot_server = function(dt, id) {
     
     # UI
     output$ui_term_plots = renderUI({
-      req(dt())
+      if(is.null(dt()) || nrow(dt()) == 0) return(caution("No terms enriched"))
       h = max(38 * nrow(dt()) + 20, 300)
       fixedRow(
         column(6, plotlyOutput(ns("plotly"), height = h)),
@@ -22,14 +22,14 @@ gs_plot_server = function(dt, id) {
     
     # Plot
     output$plotly = renderPlotly({
-      req(dt())
+      req(dt(), nrow(dt()) > 0)
       cat("Rendering", id, "dot plot...\n")
       plot_id = str_split_1(ns(id), "-")[2:3] |> paste(collapse = "_")
       store_plots(gg_dotplot(dt()), plot_id, plotly_dotplot) |> suppressWarnings()
     })
     
     output$DT = renderDT({
-      req(dt())
+      req(dt(), nrow(dt()) > 0)
       cat("Rendering", id, "datatable...\n")
       d = dt() %>% hyperlink_go_term
       d[, .(Description, qvalue, setSize)] |>

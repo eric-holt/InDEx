@@ -68,7 +68,8 @@ gsea_server = function(id = "gsea") {
     # Indicator for data change, must respond to data_identity and cache time changes
     output$data_identity = renderUI({
       req(identity())
-      if(!identical(identity(), cache_identity("gsea_go")())) {
+      .cache_time[["gsea_go"]]
+      if(!identical(identity(), cache_identity("gsea_go"))) {
         caution("Data changed")
       } else {
         span("Data not changed", icon("check"), style = "color: green;")
@@ -88,7 +89,6 @@ gsea_server = function(id = "gsea") {
     
     # Cache the results upon button click
     observe({
-      # req(identity())
       write_cache(gsea_go_, "gsea_go", identity())$data |> set_to_export("gsea_go")
     }) |> bindEvent(input$btn_cp)
     

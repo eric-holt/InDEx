@@ -38,6 +38,6 @@
 }
 
 # Show the relative path
-.relative = function(path, reference = .dir_user()){
+.relative = function(path, reference = .dir_project()){
   path |> str_remove(reference)
 }
