@@ -117,7 +117,7 @@ four_way_server = function(a, lfc, selected_sig, id = "4way"){
     # Data points outside the prediction interval
     dt_outlier = reactive({
       req(identity_4way())
-      ol = pred_outliers(dt4(), x(), y(), conf()) %>% suppressWarnings
+      ol = pred_outliers(dt4(), isolate(x()), isolate(y()), conf()) %>% suppressWarnings
       cat(sprintf("%d outliers found\n", nrow(ol)))
       ol
     })

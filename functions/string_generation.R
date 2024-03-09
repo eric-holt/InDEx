@@ -32,7 +32,8 @@ pair_to_contrast = function(pair){
 
 # Retrieve conditions from a contrast
 contrast_to_conditions = function(contrast){
-  str_split_1(contrast, "_")
+  m = str_match(contrast, "(.+)_(.+)")
+  c(m[, 2], m[, 3])
 }
 
 # To clarity the meaning of contrasts in labels

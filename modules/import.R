@@ -39,6 +39,8 @@ import_server = function(id = "import"){
     if (debugging) debug_server(environment())
     
     adding_new = reactiveVal(F)
+    file_null_error = list()
+    project_name_error = T
     
     # Dialogs
     show_add_edit_dialog = function(name = ""){
@@ -66,7 +68,7 @@ import_server = function(id = "import"){
     proj_name_err = function(name){
       name = trimws(name)
       special = "[\\\\/:*?\"<>|]"
-      .temp$project_name_error <<- T
+      project_name_error <<- T
       if(name == "")
         caution("Project name is required")
       else if(name %in% .projects() && adding_new())
@@ -74,13 +76,13 @@ import_server = function(id = "import"){
       else if(grepl(special, name))
         caution(sprintf("Special characters '%s' not allowed", special))
       else{
-        .temp$project_name_error <<- F
+        project_name_error <<- F
         ok()
       }
     }
     
     file_err = function(file, type = ""){
-      .temp$file_null_error[[type]] <<- T
+      file_null_error[[type]] <<- T
       if(is.null(file)){
         if(adding_new()){
           caution(sprintf("%s file is required", type))
@@ -89,7 +91,7 @@ import_server = function(id = "import"){
         }
       }
       else{
-        .temp$file_null_error[[type]] <<- F
+        file_null_error[[type]] <<- F
         ok(sprintf("%s is selected", file$name))
       }
     }
@@ -109,7 +111,7 @@ import_server = function(id = "import"){
     # Button actions----
     # Create ----
     create_project = function(pn, fg, fc, ft){
-      if (!.temp$project_name_error & !any(unlist(.temp$file_null_error))){
+      if (!project_name_error & !any(unlist(file_null_error))){
         removeModal()
         project = trimws(pn)
         update_project(project, fg, fc, ft)

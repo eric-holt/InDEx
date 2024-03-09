@@ -3,19 +3,21 @@ third_pair = function(pair1, pair2){
   union(setdiff(pair1, pair2), setdiff(pair2, pair1))
 }
 
-third_contrast = function(ax, ay){
+third_contrast = function(dt, ax, ay){
+  contrasts = dt$label |> unique()
   pair_x = contrast_to_conditions(ax)
   pair_y = contrast_to_conditions(ay)
   pair_z = third_pair(pair_x, pair_y)
-  pair_to_contrast(pair_z)
+  contrasts[contrasts %like% pair_z[1] & contrasts %like% pair_z[2]] |> as.character()
 }
 
 # Data for the plot
-dt_4way = function(dt, ax, ay, a, lfc, metric){
-  # Third contrast that is not compared
-  az = third_contrast(ax, ay)
+dt_4way = function(dt_res, ax, ay, a, lfc, metric){
+  ax = as.character(ax)
+  ay = as.character(ay)
+  az = third_contrast(dt_res, ax, ay)
   
-  dt = copy(dt)
+  dt = copy(dt_res)
   setnames(dt, c("log2FoldChange", "pvalue"), c("lfc", "p"))
   
   # Change column names based on the metric
@@ -26,20 +28,27 @@ dt_4way = function(dt, ax, ay, a, lfc, metric){
   d = dt |>
     dcast(feature_id + gene_id + gene_name ~ label, value.var = vars)
 
-  c("x", "y", "z") |> lapply(function(v){
-    av = get(paste0("a", v))
+  c(ax, ay, az) |> lapply(function(av){
     old = paste0(c("value_", "lfcSE_", "padj_"), av)
-    new = paste0(v, c("", "_se", "_padj"))
+    new = paste0(av, c("", "_se", "_padj"))
     setnames(d, old, new, skip_absent = T)
   })
+  
+  d[, (sprintf("%s_significant", az)) := get(sprintf("%s_padj", az)) < a]
+  
+  attr(d, "third_contrast") = az
   d
 }
 
 # Prediction outliers
-pred_outliers = function(dt, ax, ay, level){
-  d = dt[, .(x, y, gene_id, gene_name, feature_id)]
+pred_outliers = function(dt4, ax, ay, level){
+  if(ax == ay) return(NULL)
+  dt = copy(dt4)
+  d = dt[, .SD, .SDcols = c(ax, ay, "gene_id", "gene_name", "feature_id")]
   d = d[complete.cases(d)]
-  model = lm(y ~ x, dt)
+  print(colnames(d))
+  setnames(d, c(ax, ay), c("x", "y"))
+  model = lm(y ~ x, d)
   pred = predict(model, interval = "prediction", level = level)
   d[, `:=`(l = pred[, "lwr"], u = pred[, "upr"])]
   d = d[y < l | y > u]
@@ -49,20 +58,3 @@ pred_outliers = function(dt, ax, ay, level){
   d[, label := factor(label, levels = unique(labels))]
   d
 }
-
-contrasts_to_4way_labels = function(...){
-  types = list(...) |> sapply(function(contrast){
-    sprintf("%s significant", to_slash(contrast))
-  }) |> c("not significant")
-}
-
-# Pseudo namespace for the 4-way plot function
-four_way = list(
-  assign_types = function(dt, types){
-    dt[, type := types[4]]
-    dt[(x >= lfc | x <= -lfc) & px < a, type := types[1]]
-    dt[(y >= lfc | y <= -lfc) & py < a, type := types[2]]
-    dt[(z >= lfc | z <= -lfc) & pz < a, type := types[3]]
-    dt[, type := factor(type, levels = unique(types))]
-  }
-)

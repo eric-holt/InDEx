@@ -14,7 +14,7 @@ gg_MA = function(dt, a, lfc, features){
     geom_hline(yintercept = lfc, color = "gray25", linewidth = .1) +
     geom_hline(yintercept = -lfc, color = "gray25", linewidth = .1) +
     geom_hline(yintercept = 0, linewidth = .1) +
-    geom_point(data = d[type == types[3] & selected == F], alpha = .1) +
+    geom_point(data = d[type == types[3] & selected == F], alpha = .01) +
     geom_point(data = d[type %in% types[1:2] & selected == F], alpha = .5) +
     geom_point(data = d[selected == T], size = 4, alpha = .9) +
     labs(x = "log10 mean normalized counts", 

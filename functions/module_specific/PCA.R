@@ -7,7 +7,6 @@ get_pca = function(dds){
     
     dt = as.data.table(pca$x)
     dt[, sample := rownames(pca$x)]
-    dt[, id := str_sub(sample, 2, 2)]
     dt[, condition := dds$condition]
     
     list(prcomp = pca, dt = dt, explained_var = explained)
@@ -20,17 +19,20 @@ get_pca = function(dds){
 # PCA plot (PC 1 and 2)
 gg_pca = function(pca, colors = .cond_colors){
   if(is.null(pca)) stop("No data")
-  vars = pca$explained_var * 100
-  plt = pca$dt |> 
+  p = plot_2pc(pca$dt, pca$explained_var)
+  if(!is_null(colors)) 
+    p = p + scale_color_manual(values = colors)
+  p
+}
+
+plot_2pc = function(dt, vars){
+  dt |> 
     ggplot(aes(PC1, PC2, color = condition, text = sample)) +
     geom_point() +
-    coord_fixed() +
-    labs(x = sprintf("PC1 (%.1f%%)", vars[1]),
-         y = sprintf("PC2 (%.1f%%)", vars[2])) +
-    theme(legend.position = "none")
-  if(!is_null(colors)) 
-    plt = plt + scale_color_manual(values = colors)
-  plt
+    labs(x = sprintf("PC1 (%.1f%%)", vars[1] * 100),
+         y = sprintf("PC2 (%.1f%%)", vars[2] * 100)) +
+    theme(aspect.ratio = vars[2] / vars[1]) +
+    guides(color = "none")
 }
 
 plotly_pca = function(gg){
@@ -41,24 +43,27 @@ plotly_pca = function(gg){
 gg_all_pc = function(pca, colors = .cond_colors){
   if(is.null(pca)) stop("No data")
   dt = pca$dt
-  vars = pca$explained_var * 100
-  vars = vars[vars > .1]
+  vars = pca$explained_var
+  p = plot_all_pc(dt, vars)
+  if(!is_null(colors)) 
+    p = p + scale_color_manual(values = colors)
+  p
+}
+
+plot_all_pc = function(dt, vars){
+  vars = vars[vars > .01] * 100
   n = length(vars)
-  dt = dt |> dplyr::select(c(names(vars), sample, id, condition)) |> 
-    gather("PC", "score", PC1:!!sym(paste0("PC", n))) |> 
-    mutate(PC = as.factor(parse_number(PC)))
-  setDT(dt)
+  dt = dt[, .SD, .SDcols = c(names(vars), "sample", "condition")][, (1:n) := lapply(.SD, function(x) scale(x)), .SDcols = 1:n] |> melt(id.vars = c("sample", "condition"), variable.name = "PC", value.name = "score")
+  dt[, PC := str_remove(PC, "PC")]
+  dt[, PC := as.factor(parse_number(PC))]
   dt[, v := (score - min(score)) / (max(score) - min(score)) * vars[PC], by = PC]
-  plt = dt |>
+  dt |>
     ggplot(aes(PC, v)) +
     geom_col(aes(text = sprintf("PC%d explains %.1f%% variance", PC, v)),
-             data = data.table(PC = factor(1:n), v = vars), alpha = .25) + 
+             data = data.table(PC = factor(1:n), v = vars), alpha = .25) |> suppressWarnings() + 
     geom_point(aes(color = condition, 
-                   text = sprintf("%s: PC%d score %.2f", sample, PC, score))) +
+                   text = sprintf("%s: PC%d score %.2f", sample, PC, score))) |> suppressWarnings() +
     labs(y = "explained variance [%]\n(scaled PC score)")
-  if(!is_null(colors)) 
-    plt = plt + scale_color_manual(values = colors)
-  plt
 }
 
 plotly_all_pc = function(gg){
