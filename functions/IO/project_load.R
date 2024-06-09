@@ -7,7 +7,8 @@ load_project = function(input){
   init_export()
 
   # Update project name
-  assign_global(.next_project, "project")
+  .project <<- NULL
+  .next_project |> assign_global("project")
   save_current_project()
   
   make_all_dir() # Just in case they have been deleted

@@ -42,13 +42,13 @@ add_cache = function(name){
   if(!name %in% names(.cache)){
     .cache[[name]] <<- new_cache_obj(name)
     set_cache_time(name, as.POSIXct("1970-01-01 00:00:00", tz = "UTC"))
-    cat(sprintf("Added cache object '%s'\n", name))
+    cat(sprintf("Added new cache object '%s'\n", name))
   }
 }
 
 # Add all caches in the cache directory to the list
 add_all_cache = function(){
-  files = list.files(.dir_cache(), full.names = T)
+  files = list.files(.dir_cache(), "\\.rds$", full.names = T, recursive = F)
   names = str_remove(basename(files), ".rds")
   names |> lapply(add_cache)
   invisible()
@@ -78,6 +78,10 @@ read_cache = function(name){
       cat(sprintf("Loaded cache file '%s'\n", name))
     }
   }
+  
+  # Set the data to be exported
+  .cache[[name]]$data |> set_to_export(name)
+
   # Return the data
   .cache[[name]]
 }
@@ -101,6 +105,9 @@ write_cache = function(data_reactive, name, id_data = data_reactive()){
     set_cache_time(name, file.mtime(path))
     cat(sprintf("Updated cache file '%s'\n", name))
   }
+  
+  # Set the data to be exported
+  .cache[[name]]$data |> set_to_export(name)
   
   .cache[[name]]
 }
@@ -129,6 +136,7 @@ clear_all_cache = function(){
 
 # Reset internal cache data
 reset_cache = function(){
+  cat(sprintf("Resetting cache for project '%s'\n", .project))
   .cache <<- list()
   add_all_cache()
   initialize_all_cache_time()

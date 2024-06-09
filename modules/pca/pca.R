@@ -29,7 +29,7 @@ pca_server = function(data, id = "pca") {
     pca_ = reactive({
       req(data(), data()$data, nrow(data()$data) > 0)
       cat("Computing PCs...\n")
-      get_pca(data()$data) |> set_to_export(ns("pca"))
+      get_pca(data()$data)
     })
     
     # Data identity for checking the cache need

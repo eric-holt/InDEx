@@ -136,6 +136,10 @@ import_server = function(id = "import"){
       make_all_dir(project)
       update_project_list(project)
       
+      if(!any(is.null(c(fg, fc, ft)))){
+        reset_cache()
+      }
+      
       import_project_data = function(data, name){
         import_data(data, name, project)
       }

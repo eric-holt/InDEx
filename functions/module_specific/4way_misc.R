@@ -46,7 +46,6 @@ pred_outliers = function(dt4, ax, ay, level){
   dt = copy(dt4)
   d = dt[, .SD, .SDcols = c(ax, ay, "gene_id", "gene_name", "feature_id")]
   d = d[complete.cases(d)]
-  print(colnames(d))
   setnames(d, c(ax, ay), c("x", "y"))
   model = lm(y ~ x, d)
   pred = predict(model, interval = "prediction", level = level)

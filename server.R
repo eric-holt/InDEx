@@ -1,7 +1,7 @@
 server = function(input, output, session){
   # Load project when flagged
   observe({
-    if(.project_load_flag()) load_project(input)
+    if(project_being_loaded()) load_project(input)
   })
   
   # While loading a project, do nothing
@@ -102,7 +102,7 @@ server = function(input, output, session){
     dt_res_ = reactive({
       req(res())
       cat("Updating data.table for DESeq2 results...\n")
-      dt_all_results(res()) |> set_to_export("dt_res")
+      dt_all_results(res())
     })
     
     # Save the result data.table to cache when the filter is updated
@@ -145,8 +145,7 @@ server = function(input, output, session){
     
     # Cache dt_sig when the thresholds are updated
     observe({
-      # req(sig_identity())
-      write_cache(dt_sig_, "dt_sig", sig_identity())$data |> set_to_export("dt_sig")
+      write_cache(dt_sig_, "dt_sig", sig_identity())$data
     })
  
     

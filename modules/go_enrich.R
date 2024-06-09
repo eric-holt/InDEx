@@ -105,7 +105,7 @@ go_server = function(id = "go") {
     
     # Cache the results upon button click
     observe({
-      write_cache(enrich_go_, "enrich_go", identity())$data |> set_to_export("enrich_go")
+      write_cache(enrich_go_, "enrich_go", identity())$data
     }) |> bindEvent(input$btn_cp)
     
     # Use the cache for visualization

@@ -89,12 +89,12 @@ gsea_server = function(id = "gsea") {
     
     # Cache the results upon button click
     observe({
-      write_cache(gsea_go_, "gsea_go", identity())$data |> set_to_export("gsea_go")
+      write_cache(gsea_go_, "gsea_go", identity())$data
     }) |> bindEvent(input$btn_cp)
     
     # Use the cache for visualization
     gsea_go = cache("gsea_go")
-    
+
     # Update the GSEA panel; give the reactives
     go_panels_server(gsea_go, p, q, n, sort, "gsea_go")
     
