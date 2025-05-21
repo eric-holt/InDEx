@@ -1,4 +1,4 @@
-# InDEx (Interacteve Defferential Exploler)
+# InDEx (Interactive Differential Explorer)
 
 ## Input files
 
